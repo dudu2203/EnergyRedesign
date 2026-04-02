@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<pre id="out">טוען...</pre>
+<script>
+fetch('energy_tables.xlsx')
+  .then(r => r.arrayBuffer())
+  .then(buf => {
+    const wb = XLSX.read(buf, { type: 'array', cellFormula: true, cellNF: true });
+    let out = '';
+    out += '=== שמות גליונות ===\n';
+    wb.SheetNames.forEach((name, i) => out += `  [${i}] ${name}\n`);
+    out += '\n';
+
+    // קרא גליונות גז ודלקים
+    ['גז', 'דלקים', 'גז טבעי', 'fuel', 'gas', 'דלק'].forEach(shName => {
+      const ws = wb.Sheets[shName];
+      if (!ws) return;
+      out += `\n${'='.repeat(50)}\n`;
+      out += `גליון: "${shName}"\n`;
+      out += `${'='.repeat(50)}\n`;
+      const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      out += `טווח: ${ws['!ref']}\n`;
+      out += `שורות: ${range.e.r + 1}, עמודות: ${range.e.c + 1}\n\n`;
+
+      // הדפס את כל התאים
+      for (let r = 0; r <= Math.min(range.e.r, 50); r++) {
+        let rowOut = `שורה ${r+1}: `;
+        let hasData = false;
+        for (let c = 0; c <= range.e.c; c++) {
+          const addr = XLSX.utils.encode_cell({r, c});
+          const cell = ws[addr];
+          if (cell) {
+            const col = XLSX.utils.encode_col(c);
+            rowOut += `[${col}]="${cell.v ?? ''}"${cell.f ? '(f:'+cell.f+')' : ''} `;
+            hasData = true;
+          }
+        }
+        if (hasData) out += rowOut + '\n';
+      }
+    });
+
+    // קרא גז ודלקים בפירוט מלא
+    ['גז', 'דלקים'].forEach(shName => {
+      const ws = wb.Sheets[shName];
+      if (!ws || !ws['!ref']) return;
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      out += `\n\n${'#'.repeat(60)}\n`;
+      out += `פירוט מלא: "${shName}" [${ws['!ref']}]\n`;
+      out += `${'#'.repeat(60)}\n`;
+      for (let r = 0; r <= range.e.r; r++) {
+        let rowOut = '';
+        for (let c = 0; c <= range.e.c; c++) {
+          const addr = XLSX.utils.encode_cell({r, c});
+          const cell = ws[addr];
+          if (cell) rowOut += `[${XLSX.utils.encode_col(c)}]"${cell.v ?? ''}"${cell.f?'(f:'+cell.f+')':''} `;
+        }
+        if (rowOut.trim()) out += `ש${r+1}: ${rowOut}\n`;
+      }
+    });
+
+    document.getElementById('out').textContent = out;
+    console.log(out);
+  }).catch(e => { console.error(e); document.getElementById('out').textContent = 'שגיאה: ' + e; });
+</script>
+</body>
+</html>

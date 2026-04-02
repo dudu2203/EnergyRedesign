@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+<pre id="out">טוען...</pre>
+<script>
+fetch('energy_tables.xlsx')
+  .then(r => r.arrayBuffer())
+  .then(buf => {
+    const wb = XLSX.read(buf, { type: 'array' });
+    
+    ['רישום לחללים שונים'].forEach(shName => {
+      const ws = wb.Sheets[shName];
+      if (!ws || !ws['!ref']) { console.log('לא נמצא: ' + shName); return; }
+      const range = XLSX.utils.decode_range(ws['!ref']);
+      console.log('='.repeat(60));
+      console.log('גליון: ' + shName + ' טווח: ' + ws['!ref']);
+      console.log('שורות: ' + (range.e.r+1) + '  עמודות: ' + (range.e.c+1));
+      console.log('='.repeat(60));
+      
+      for (let r = range.s.r; r <= range.e.r; r++) {
+        let row = 'ש' + (r+1) + ': ';
+        let hasData = false;
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cell = ws[XLSX.utils.encode_cell({r,c})];
+          if (cell && cell.v !== undefined && cell.v !== '') {
+            row += '[' + XLSX.utils.encode_col(c) + ']="' + cell.v + '" ';
+            hasData = true;
+          }
+        }
+        if (hasData) console.log(row);
+      }
+    });
+
+  }).catch(e => console.error('שגיאה: ' + e));
+</script>
+</body>
+</html>
