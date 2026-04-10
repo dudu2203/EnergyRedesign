@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>טופס סיכום פגישה – ממונה אנרגיה | NRG Redesign</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap');
+
+  :root {
+    --green: #2d7a3a;
+    --green-light: #e8f5ea;
+    --green-mid: #4a9e5c;
+    --dark: #1a1a1a;
+    --gray: #6b7280;
+    --gray-light: #f4f6f4;
+    --border: #d1dbd2;
+    --white: #ffffff;
+    --accent: #f0f7f1;
+    --shadow: 0 2px 12px rgba(45,122,58,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: #f0f4f0;
+    color: var(--dark);
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ===== HEADER ===== */
+  .app-header {
+    background: var(--white);
+    border-bottom: 3px solid var(--green);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .logo-block { display: flex; align-items: center; gap: 14px; }
+  .logo-svg { width: 48px; height: 48px; }
+  .logo-text { line-height: 1.2; }
+  .logo-text .en { font-size: 18px; font-weight: 800; color: var(--green); letter-spacing: -0.5px; }
+  .logo-text .en span { color: var(--dark); }
+  .logo-text .he { font-size: 11px; color: var(--gray); font-weight: 400; }
+  .header-title { font-size: 15px; font-weight: 600; color: var(--gray); }
+  .header-actions { display: flex; gap: 10px; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    padding: 9px 20px; border-radius: 8px; border: none; cursor: pointer;
+    font-family: 'Heebo', sans-serif; font-size: 14px; font-weight: 600;
+    transition: all 0.18s; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .btn-primary { background: var(--green); color: white; }
+  .btn-primary:hover { background: #236030; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(45,122,58,0.3); }
+  .btn-outline { background: white; color: var(--green); border: 2px solid var(--green); }
+  .btn-outline:hover { background: var(--green-light); }
+  .btn-danger { background: #fee2e2; color: #dc2626; border: none; }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-add { background: var(--green-light); color: var(--green); border: 1.5px dashed var(--green-mid); font-size: 13px; padding: 7px 16px; border-radius: 8px; cursor: pointer; font-family: 'Heebo', sans-serif; font-weight: 600; transition: all 0.15s; }
+  .btn-add:hover { background: var(--green); color: white; border-style: solid; }
+
+  /* ===== MAIN LAYOUT ===== */
+  .container { max-width: 960px; margin: 0 auto; padding: 28px 20px 60px; }
+
+  /* ===== SECTION CARD ===== */
+  .section-card {
+    background: var(--white);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+    margin-bottom: 22px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .section-header {
+    background: linear-gradient(135deg, var(--green) 0%, var(--green-mid) 100%);
+    padding: 14px 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-header h2 { color: white; font-size: 16px; font-weight: 700; }
+  .section-icon { font-size: 18px; }
+  .section-body { padding: 22px; }
+
+  /* ===== FORM FIELDS ===== */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 13px; font-weight: 600; color: var(--gray); }
+  input[type="text"], input[type="date"], input[type="time"], input[type="email"],
+  select, textarea {
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-family: 'Heebo', sans-serif;
+    font-size: 14px;
+    color: var(--dark);
+    background: var(--gray-light);
+    transition: border-color 0.15s, background 0.15s;
+    width: 100%;
+    direction: rtl;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--green);
+    background: white;
+    box-shadow: 0 0 0 3px rgba(45,122,58,0.1);
+  }
+  textarea { resize: vertical; min-height: 80px; }
+
+  /* ===== FINDING ROWS ===== */
+  .finding-row {
+    background: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .finding-row textarea { min-height: 60px; background: white; }
+  .priority-badge {
+    padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 700;
+    cursor: pointer; border: none; font-family: 'Heebo', sans-serif; white-space: nowrap;
+  }
+  .priority-high { background: #fee2e2; color: #dc2626; }
+  .priority-med { background: #fef3c7; color: #d97706; }
+  .priority-low { background: #d1fae5; color: #065f46; }
+  .remove-btn { background: none; border: none; cursor: pointer; color: #dc2626; font-size: 18px; line-height: 1; padding: 4px; border-radius: 6px; transition: background 0.15s; }
+  .remove-btn:hover { background: #fee2e2; }
+
+  /* ===== FIELD FINDINGS + PHOTO ===== */
+  .field-finding-row {
+    background: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .field-finding-row .row-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .field-finding-num {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--green); color: white;
+    font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .field-finding-row .fields-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;
+  }
+  .field-finding-row .fields-grid .full { grid-column: 1 / -1; }
+  .photo-zone {
+    border: 2px dashed var(--green-mid);
+    border-radius: 10px;
+    padding: 14px;
+    background: white;
+    margin-top: 10px;
+  }
+  .photo-zone-label {
+    font-size: 12px; font-weight: 600; color: var(--green); margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .photo-grid {
+    display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px;
+  }
+  .photo-thumb {
+    position: relative; width: 100px; height: 100px;
+    border-radius: 8px; overflow: hidden;
+    border: 2px solid var(--border); flex-shrink: 0;
+  }
+  .photo-thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .photo-thumb .remove-photo {
+    position: absolute; top: 3px; left: 3px;
+    background: rgba(220,38,38,0.85); color: white;
+    border: none; border-radius: 50%; width: 22px; height: 22px;
+    font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; transition: background 0.15s;
+  }
+  .photo-thumb .remove-photo:hover { background: #dc2626; }
+  .photo-thumb .photo-caption {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.55); color: white;
+    font-size: 10px; padding: 2px 5px; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .photo-upload-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    background: var(--green-light); color: var(--green);
+    border: 1.5px solid var(--green-mid); cursor: pointer;
+    font-family: 'Heebo', sans-serif; transition: all 0.15s;
+  }
+  .photo-upload-btn:hover { background: var(--green); color: white; }
+  .photo-upload-btn input[type="file"] { display: none; }
+
+  @media print {
+    .photo-zone { border: 1px solid #ccc; }
+    .photo-upload-btn { display: none; }
+    .photo-thumb { width: 120px; height: 120px; }
+    .field-finding-row .fields-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ===== RECOMMENDATIONS ===== */
+  .rec-row {
+    display: grid; grid-template-columns: 28px 1fr auto auto; gap: 10px;
+    align-items: center; padding: 10px 14px;
+    background: var(--accent); border-radius: 8px; margin-bottom: 8px;
+    border: 1px solid var(--border);
+  }
+  .rec-num { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: white; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .rec-row input { flex: 1; }
+
+  /* ===== TIMELINE ===== */
+  .timeline-row {
+    display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 10px;
+    align-items: center; margin-bottom: 8px;
+    padding: 10px 14px; background: var(--accent); border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+
+  /* ===== REQUESTS TABLE ===== */
+  .request-row {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 10px;
+    align-items: center; margin-bottom: 8px;
+    padding: 10px 14px; background: var(--accent); border-radius: 8px;
+    border: 1px solid var(--border);
+  }
+  .status-select { font-size: 12px; padding: 5px 8px; }
+
+  /* ===== FOOTER META ===== */
+  .meta-bar {
+    background: var(--green-light); border-top: 2px solid var(--green);
+    padding: 16px 22px; display: flex; gap: 24px; align-items: center; flex-wrap: wrap;
+  }
+  .meta-bar .form-group { flex: 1; min-width: 160px; }
+
+  /* ===== PRINT / EXPORT ===== */
+  .action-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white; border-top: 2px solid var(--green);
+    padding: 14px 32px; display: flex; gap: 12px; justify-content: center;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.1); z-index: 200;
+  }
+
+  /* ===== PRINT STYLES ===== */
+  @media print {
+    body { background: white; font-size: 12px; }
+    .app-header { position: static; border-bottom: 2px solid #2d7a3a; box-shadow: none; }
+    .action-bar { display: none; }
+    .btn-add, .remove-btn, .btn-danger { display: none; }
+    .section-card { break-inside: avoid; box-shadow: none; border: 1px solid #ccc; }
+    .container { padding: 0; max-width: 100%; }
+    .finding-row { display: block; }
+    .finding-row textarea { border: none; background: none; padding: 0; resize: none; height: auto; }
+    input, textarea, select { border: none !important; background: none !important; box-shadow: none !important; padding: 4px 0 !important; }
+    .priority-badge { display: inline-block; }
+    .print-page-break { page-break-before: always; }
+    @page { margin: 18mm 15mm; }
+  }
+
+  /* ===== DIVIDER ===== */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+  /* ===== TAG-LIKE STATUS ===== */
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+  .tag-open { background: #fef3c7; color: #92400e; }
+  .tag-done { background: #d1fae5; color: #065f46; }
+  .tag-pending { background: #dbeafe; color: #1e40af; }
+
+  /* ===== TOOLTIP HINT ===== */
+  .hint { font-size: 11px; color: var(--gray); margin-top: 3px; }
+
+  /* ===== SCROLLABLE SECTION ===== */
+  .empty-state { text-align: center; padding: 22px; color: var(--gray); font-size: 14px; }
+
+  /* responsive */
+  @media (max-width: 640px) {
+    .form-grid, .form-grid-3 { grid-template-columns: 1fr; }
+    .finding-row { grid-template-columns: 1fr; }
+    .timeline-row { grid-template-columns: 1fr 1fr; }
+    .consumer-table { font-size: 12px; }
+    .action-bar { flex-wrap: wrap; padding: 12px 16px; }
+    .header-title { display: none; }
+  }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</head>
+<body>
+
+<!-- ===== HEADER ===== -->
+<div class="app-header">
+  <div class="logo-block">
+    <svg class="logo-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="24" cy="24" r="24" fill="#2d7a3a"/>
+      <path d="M24 8 L28 20 L40 20 L30 28 L34 40 L24 32 L14 40 L18 28 L8 20 L20 20 Z" fill="white" opacity="0.9"/>
+    </svg>
+    <div class="logo-text">
+      <div class="en">Energy <span>redesign</span></div>
+      <div class="he">סקירה, ביצוע וליווי תהליכי התייעלות אנרגטית</div>
+    </div>
+  </div>
+  <div class="header-title">טופס סיכום פגישה – ממונה אנרגיה</div>
+  <div class="header-actions">
+    <button class="btn btn-outline btn-sm" onclick="clearForm()">🗑 נקה טופס</button>
+    <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 הדפס / PDF</button>
+  </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="container">
+
+  <!-- 1. CUSTOMER DETAILS -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">🏢</span>
+      <h2>פרטי לקוח ופגישה</h2>
+    </div>
+    <div class="section-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>שם לקוח / חברה</label>
+          <input type="text" id="client-name" placeholder="לדוגמה: MSD, א.י. כהן פלסט">
+        </div>
+        <div class="form-group">
+          <label>שם איש קשר</label>
+          <input type="text" id="contact-name" placeholder="שם מלא">
+        </div>
+        <div class="form-group">
+          <label>תאריך הפגישה</label>
+          <input type="date" id="meeting-date">
+        </div>
+        <div class="form-group">
+          <label>שעת הפגישה</label>
+          <input type="time" id="meeting-time">
+        </div>
+        <div class="form-group">
+          <label>כתובת / מבנה</label>
+          <input type="text" id="address" placeholder="כתובת מלאה">
+        </div>
+        <div class="form-group">
+          <label>סוג ביקור</label>
+          <select id="visit-type">
+            <option value="">– בחר –</option>
+            <option>סיור מקדים</option>
+            <option>סיור ראשוני</option>
+            <option>פגישת מעקב</option>
+            <option>סיור עומק</option>
+            <option>פגישת סיכום שנתית</option>
+            <option>אחר</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>רקע והסבר הביקור</label>
+          <textarea id="visit-background" placeholder="תיאור קצר של מטרת הביקור והרקע..."></textarea>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. FINDINGS -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">🔍</span>
+      <h2>ממצאי סיור</h2>
+    </div>
+    <div class="section-body">
+      <p class="hint" style="margin-bottom:14px;">הוסף ממצא לכל פריט שנצפה – בחר עדיפות (גבוהה / בינונית / נמוכה)</p>
+      <div id="findings-list"></div>
+      <button class="btn-add" onclick="addFinding()">＋ הוסף ממצא</button>
+    </div>
+  </div>
+
+  <!-- 3. ENERGY CONSUMERS TABLE -->
+  <!-- 3. FIELD FINDINGS + PHOTOS -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">📸</span>
+      <h2>ממצאים בשטח ותיעוד חזותי</h2>
+    </div>
+    <div class="section-body">
+      <p class="hint" style="margin-bottom:14px;">לכל ממצא ניתן לצרף תמונה מהמצלמה או מהגלריה</p>
+      <div id="field-findings-list"></div>
+      <button class="btn-add" onclick="addFieldFinding()">＋ הוסף ממצא שטח</button>
+    </div>
+  </div>
+
+  <!-- 4. RECOMMENDATIONS -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">💡</span>
+      <h2>המלצות ופעולות נדרשות</h2>
+    </div>
+    <div class="section-body">
+      <div id="recommendations-list"></div>
+      <button class="btn-add" onclick="addRecommendation()">＋ הוסף המלצה</button>
+    </div>
+  </div>
+
+  <!-- 5. TIMELINE -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">📅</span>
+      <h2>לוח זמנים לביצוע</h2>
+    </div>
+    <div class="section-body">
+      <div id="timeline-list"></div>
+      <button class="btn-add" onclick="addTimeline()">＋ הוסף שלב</button>
+    </div>
+  </div>
+
+  <!-- 6. INFORMATION REQUESTS -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">📋</span>
+      <h2>בקשות לקבלת מידע / המשך</h2>
+    </div>
+    <div class="section-body">
+      <div id="requests-list"></div>
+      <button class="btn-add" onclick="addRequest()">＋ הוסף בקשה</button>
+    </div>
+  </div>
+
+  <!-- 7. SUMMARY & SIGNATURE -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">✍️</span>
+      <h2>סיכום כללי וחתימה</h2>
+    </div>
+    <div class="section-body">
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>סיכום והערות נוספות</label>
+        <textarea id="general-summary" placeholder="סיכום הפגישה, מסקנות כלליות..." style="min-height:100px;"></textarea>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>פגישה הבאה – תאריך מוצע</label>
+          <input type="date" id="next-meeting">
+        </div>
+        <div class="form-group">
+          <label>פגישה הבאה – נושא</label>
+          <input type="text" id="next-topic" placeholder="נושא הפגישה הבאה">
+        </div>
+      </div>
+    </div>
+    <div class="meta-bar">
+      <div class="form-group">
+        <label>מבצע הדו"ח</label>
+        <input type="text" id="author" value="דניאל קליינהנדלר">
+      </div>
+      <div class="form-group">
+        <label>תפקיד</label>
+        <input type="text" id="author-role" value="סוקר וממונה אנרגיה">
+      </div>
+      <div class="form-group">
+        <label>טלפון</label>
+        <input type="text" id="author-phone" value="0524847723">
+      </div>
+      <div class="form-group">
+        <label>מייל</label>
+        <input type="email" id="author-email" value="Daniel@nrgredesign.com">
+      </div>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<!-- ===== ACTION BAR ===== -->
+<div class="action-bar">
+  <button class="btn btn-primary" id="save-meeting-btn" onclick="saveMeeting()" style="background:#2d7a3a;">💾 שמור סיכום</button>
+  <button class="btn btn-primary" onclick="exportMeetingPDF()" style="background:#1a1a1a;">📄 ייצא PDF</button>
+</div>
+
+<script>
+// ===== FINDINGS =====
+let findingCount = 0;
+function addFinding(text='', priority='בינונית') {
+  findingCount++;
+  const n = findingCount;
+  const colors = {'גבוהה':'priority-high','בינונית':'priority-med','נמוכה':'priority-low'};
+  const div = document.createElement('div');
+  div.className = 'finding-row';
+  div.id = 'finding-' + n;
+  div.innerHTML = `
+    <div style="display:flex;gap:10px;align-items:flex-start;">
+      <span style="font-weight:700;color:var(--green);font-size:15px;min-width:24px;margin-top:8px;">${n}.</span>
+      <textarea placeholder="תיאור הממצא..." style="flex:1;">${text}</textarea>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end;">
+      <label style="font-size:11px;color:var(--gray);">עדיפות</label>
+      <div style="display:flex;gap:6px;">
+        <button class="priority-badge priority-high" onclick="setPriority(${n},'גבוהה',this)">גבוהה</button>
+        <button class="priority-badge priority-med" onclick="setPriority(${n},'בינונית',this)">בינונית</button>
+        <button class="priority-badge priority-low" onclick="setPriority(${n},'נמוכה',this)">נמוכה</button>
+      </div>
+    </div>
+    <button class="remove-btn" onclick="document.getElementById('finding-${n}').remove(); renumberFindings();" title="הסר">✕</button>
+  `;
+  div.dataset.priority = priority;
+  document.getElementById('findings-list').appendChild(div);
+  div.querySelector('textarea').focus();
+}
+function setPriority(n, p, btn) {
+  document.getElementById('finding-'+n).dataset.priority = p;
+  btn.style.outline = '2px solid #1a1a1a';
+  btn.style.outlineOffset = '2px';
+  setTimeout(()=>{btn.style.outline='';btn.style.outlineOffset='';},600);
+}
+function renumberFindings() {
+  document.querySelectorAll('#findings-list .finding-row').forEach((el, i) => {
+    const num = el.querySelector('span[style*="font-weight:700"]');
+    if(num) num.textContent = (i+1)+'.';
+  });
+  findingCount = document.querySelectorAll('#findings-list .finding-row').length;
+}
+
+// ===== FIELD FINDINGS + PHOTOS =====
+let ffCount = 0;
+function addFieldFinding() {
+  ffCount++;
+  const n = ffCount;
+  const div = document.createElement('div');
+  div.className = 'field-finding-row';
+  div.id = 'ff-' + n;
+  div.innerHTML = `
+    <div class="row-header">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div class="field-finding-num">${n}</div>
+        <span style="font-weight:700;font-size:14px;color:var(--green);">ממצא שטח #${n}</span>
+      </div>
+      <button class="remove-btn" onclick="removeFieldFinding(${n})" title="הסר">✕</button>
+    </div>
+    <div class="fields-grid">
+      <div class="form-group">
+        <label>כותרת / תיאור קצר</label>
+        <input type="text" placeholder="לדוגמה: מזגן דלוק ללא אנשים">
+      </div>
+      <div class="form-group">
+        <label>מיקום במבנה</label>
+        <input type="text" placeholder="קומה, חדר, אזור...">
+      </div>
+      <div class="form-group">
+        <label>קטגוריה</label>
+        <select>
+          <option>מיזוג / חימום</option>
+          <option>תאורה</option>
+          <option>אוויר דחוס</option>
+          <option>מונה / חיוב</option>
+          <option>ייצור / מכונה</option>
+          <option>מעטפת / בנייה</option>
+          <option>שרתים / IT</option>
+          <option>אחר</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>עדיפות טיפול</label>
+        <select>
+          <option>גבוהה – מיידי</option>
+          <option>בינונית – תוך חודש</option>
+          <option>נמוכה – לתכנון</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>פירוט הממצא</label>
+        <textarea placeholder="תיאור מפורט של הממצא, הבעיה, והשפעתה על צריכת האנרגיה..." style="min-height:70px;"></textarea>
+      </div>
+    </div>
+    <div class="photo-zone">
+      <div class="photo-zone-label">📷 תמונות מצורפות</div>
+      <div class="photo-grid" id="photo-grid-${n}"></div>
+      <label class="photo-upload-btn">
+        📷 צלם / בחר תמונה
+        <input type="file" accept="image/*" capture="environment" multiple onchange="handlePhotos(event, ${n})">
+      </label>
+    </div>
+  `;
+  document.getElementById('field-findings-list').appendChild(div);
+}
+
+function removeFieldFinding(n) {
+  const el = document.getElementById('ff-' + n);
+  if (el) el.remove();
+  renumberFieldFindings();
+}
+
+function renumberFieldFindings() {
+  document.querySelectorAll('#field-findings-list .field-finding-row').forEach((el, i) => {
+    const num = el.querySelector('.field-finding-num');
+    const title = el.querySelector('span[style*="font-weight:700"]');
+    if (num) num.textContent = i + 1;
+    if (title) title.textContent = `ממצא שטח #${i + 1}`;
+  });
+}
+
+function handlePhotos(event, n) {
+  const files = event.target.files;
+  const grid = document.getElementById('photo-grid-' + n);
+  Array.from(files).forEach(file => {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      const thumbId = 'thumb-' + Date.now() + '-' + Math.random().toString(36).slice(2);
+      const thumb = document.createElement('div');
+      thumb.className = 'photo-thumb';
+      thumb.id = thumbId;
+      thumb.innerHTML = `
+        <img src="${e.target.result}" alt="${file.name}" onclick="showPhotoModal('${e.target.result}')">
+        <button class="remove-photo" onclick="document.getElementById('${thumbId}').remove()" title="הסר">✕</button>
+        <div class="photo-caption">${file.name}</div>
+      `;
+      grid.appendChild(thumb);
+    };
+    reader.readAsDataURL(file);
+  });
+  // reset input so same file can be re-selected
+  event.target.value = '';
+}
+
+// Photo lightbox
+function showPhotoModal(src) {
+  const overlay = document.createElement('div');
+  Object.assign(overlay.style, {
+    position:'fixed', inset:'0', background:'rgba(0,0,0,0.88)',
+    display:'flex', alignItems:'center', justifyContent:'center',
+    zIndex:'9999', cursor:'zoom-out'
+  });
+  const img = document.createElement('img');
+  Object.assign(img.style, {
+    maxWidth:'92vw', maxHeight:'90vh', borderRadius:'10px',
+    boxShadow:'0 8px 40px rgba(0,0,0,0.6)'
+  });
+  img.src = src;
+  overlay.appendChild(img);
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
+}
+
+function getFieldFindingsData() {
+  const result = [];
+  document.querySelectorAll('#field-findings-list .field-finding-row').forEach(el => {
+    const inputs = el.querySelectorAll('input[type="text"]');
+    const selects = el.querySelectorAll('select');
+    const textarea = el.querySelector('textarea');
+    const photos = [];
+    el.querySelectorAll('.photo-thumb img').forEach(img => photos.push(img.src));
+    result.push({
+      title: inputs[0]?.value || '',
+      location: inputs[1]?.value || '',
+      category: selects[0]?.value || '',
+      priority: selects[1]?.value || '',
+      detail: textarea?.value || '',
+      photoCount: photos.length
+    });
+  });
+  return result;
+}
+
+// ===== RECOMMENDATIONS =====
+let recCount = 0;
+function addRecommendation(text='') {
+  recCount++;
+  const n = recCount;
+  const div = document.createElement('div');
+  div.className = 'rec-row';
+  div.id = 'rec-'+n;
+  div.innerHTML = `
+    <div class="rec-num">${n}</div>
+    <input type="text" value="${text}" placeholder="תיאור ההמלצה...">
+    <select style="font-size:13px;padding:7px 10px;">
+      <option>קצר טווח</option>
+      <option>בינוני</option>
+      <option>ארוך טווח</option>
+    </select>
+    <button class="remove-btn" onclick="document.getElementById('rec-${n}').remove(); renumberRecs();">✕</button>
+  `;
+  document.getElementById('recommendations-list').appendChild(div);
+}
+function renumberRecs() {
+  document.querySelectorAll('#recommendations-list .rec-row').forEach((el, i) => {
+    const num = el.querySelector('.rec-num');
+    if(num) num.textContent = i+1;
+  });
+}
+
+// ===== TIMELINE =====
+let tlCount = 0;
+function addTimeline(desc='', deadline='', responsible='') {
+  tlCount++;
+  const n = tlCount;
+  const div = document.createElement('div');
+  div.className = 'timeline-row';
+  div.id = 'tl-'+n;
+  div.innerHTML = `
+    <input type="text" value="${desc}" placeholder="תיאור הפעולה / שלב...">
+    <input type="date" value="${deadline}" title="לוח זמנים">
+    <input type="text" value="${responsible}" placeholder="אחראי">
+    <button class="remove-btn" onclick="document.getElementById('tl-${n}').remove();">✕</button>
+  `;
+  document.getElementById('timeline-list').appendChild(div);
+}
+
+// ===== REQUESTS =====
+let reqCount = 0;
+function addRequest(text='', status='פתוח') {
+  reqCount++;
+  const n = reqCount;
+  const div = document.createElement('div');
+  div.className = 'request-row';
+  div.id = 'req-'+n;
+  div.innerHTML = `
+    <input type="text" value="${text}" placeholder="בקשה / מידע נדרש...">
+    <select style="font-size:13px;padding:7px;">
+      <option ${status==='פתוח'?'selected':''}>פתוח</option>
+      <option ${status==='בטיפול'?'selected':''}>בטיפול</option>
+      <option ${status==='הושלם'?'selected':''}>הושלם</option>
+    </select>
+    <button class="remove-btn" onclick="document.getElementById('req-${n}').remove();">✕</button>
+  `;
+  document.getElementById('requests-list').appendChild(div);
+}
+
+// ===== SAVE / LOAD =====
+function getFormData() {
+  const findings = [];
+  document.querySelectorAll('#findings-list .finding-row').forEach(el => {
+    findings.push({ text: el.querySelector('textarea').value, priority: el.dataset.priority });
+  });
+  const fieldFindings = getFieldFindingsData();
+  const recs = [];
+  document.querySelectorAll('#recommendations-list .rec-row').forEach(el => {
+    recs.push({ text: el.querySelector('input').value, term: el.querySelector('select').value });
+  });
+  const timeline = [];
+  document.querySelectorAll('#timeline-list .timeline-row').forEach(el => {
+    const inputs = el.querySelectorAll('input');
+    timeline.push({ desc: inputs[0]?.value, deadline: inputs[1]?.value, responsible: inputs[2]?.value });
+  });
+  const requests = [];
+  document.querySelectorAll('#requests-list .request-row').forEach(el => {
+    requests.push({ text: el.querySelector('input').value, status: el.querySelector('select').value });
+  });
+  return {
+    clientName: document.getElementById('client-name').value,
+    contactName: document.getElementById('contact-name').value,
+    meetingDate: document.getElementById('meeting-date').value,
+    meetingTime: document.getElementById('meeting-time').value,
+    address: document.getElementById('address').value,
+    visitType: document.getElementById('visit-type').value,
+    visitBackground: document.getElementById('visit-background').value,
+    generalSummary: document.getElementById('general-summary').value,
+    nextMeeting: document.getElementById('next-meeting').value,
+    nextTopic: document.getElementById('next-topic').value,
+    author: document.getElementById('author').value,
+    authorRole: document.getElementById('author-role').value,
+    authorPhone: document.getElementById('author-phone').value,
+    authorEmail: document.getElementById('author-email').value,
+    findings, fieldFindings, recs, timeline, requests
+  };
+}
+
+function saveLocal() {
+  const data = getFormData();
+  localStorage.setItem('nrg_meeting_draft', JSON.stringify(data));
+  showToast('טיוטה נשמרה בהצלחה ✓');
+}
+
+function loadLocal() {
+  const raw = localStorage.getItem('nrg_meeting_draft');
+  if (!raw) { showToast('לא נמצאה טיוטה שמורה'); return; }
+  const d = JSON.parse(raw);
+  document.getElementById('client-name').value = d.clientName || '';
+  document.getElementById('contact-name').value = d.contactName || '';
+  document.getElementById('meeting-date').value = d.meetingDate || '';
+  document.getElementById('meeting-time').value = d.meetingTime || '';
+  document.getElementById('address').value = d.address || '';
+  document.getElementById('visit-type').value = d.visitType || '';
+  document.getElementById('visit-background').value = d.visitBackground || '';
+  document.getElementById('general-summary').value = d.generalSummary || '';
+  document.getElementById('next-meeting').value = d.nextMeeting || '';
+  document.getElementById('next-topic').value = d.nextTopic || '';
+  document.getElementById('author').value = d.author || '';
+  document.getElementById('author-role').value = d.authorRole || '';
+  document.getElementById('author-phone').value = d.authorPhone || '';
+  document.getElementById('author-email').value = d.authorEmail || '';
+  document.getElementById('findings-list').innerHTML = '';
+  findingCount = 0;
+  (d.findings||[]).forEach(f => addFinding(f.text, f.priority));
+  document.getElementById('field-findings-list').innerHTML = '';
+  ffCount = 0;
+  (d.fieldFindings||[]).forEach(() => addFieldFinding());
+  document.getElementById('recommendations-list').innerHTML = '';
+  recCount = 0;
+  (d.recs||[]).forEach(r => addRecommendation(r.text));
+  document.getElementById('timeline-list').innerHTML = '';
+  tlCount = 0;
+  (d.timeline||[]).forEach(t => addTimeline(t.desc, t.deadline, t.responsible));
+  document.getElementById('requests-list').innerHTML = '';
+  reqCount = 0;
+  (d.requests||[]).forEach(r => addRequest(r.text, r.status));
+  showToast('טיוטה נטענה ✓');
+}
+
+function clearForm() {
+  if (!confirm('למחוק את כל הנתונים בטופס?')) return;
+  document.querySelectorAll('input[type="text"], input[type="date"], input[type="time"], input[type="email"], textarea').forEach(el => {
+    el.value = '';
+  });
+  document.getElementById('findings-list').innerHTML = '';
+  document.getElementById('field-findings-list').innerHTML = '';
+  document.getElementById('recommendations-list').innerHTML = '';
+  document.getElementById('timeline-list').innerHTML = '';
+  document.getElementById('requests-list').innerHTML = '';
+  findingCount = 0; ffCount = 0; recCount = 0; tlCount = 0; reqCount = 0;
+  document.getElementById('author').value = 'דניאל קליינהנדלר';
+  document.getElementById('author-role').value = 'סוקר וממונה אנרגיה';
+  document.getElementById('author-phone').value = '0524847723';
+  document.getElementById('author-email').value = 'Daniel@nrgredesign.com';
+}
+
+// ===== EMAIL =====
+function sendEmail() {
+  const d = getFormData();
+  const client = d.clientName || 'לקוח';
+  const date = d.meetingDate || '';
+  const subject = encodeURIComponent(`סיכום פגישה – ${client} – ${date} | NRG Redesign`);
+
+  let body = `סיכום פגישה – ${client}\nתאריך: ${date}\n\n`;
+  body += `איש קשר: ${d.contactName}\nכתובת: ${d.address}\nסוג ביקור: ${d.visitType}\n\n`;
+  if (d.visitBackground) body += `רקע:\n${d.visitBackground}\n\n`;
+  if (d.findings.length) {
+    body += `ממצאי סיור:\n`;
+    d.findings.forEach((f,i) => body += `${i+1}. [${f.priority}] ${f.text}\n`);
+    body += '\n';
+  }
+  if (d.recs.length) {
+    body += `המלצות:\n`;
+    d.recs.forEach((r,i) => body += `${i+1}. ${r.text} (${r.term})\n`);
+    body += '\n';
+  }
+  if (d.requests.length) {
+    body += `בקשות:\n`;
+    d.requests.forEach((r,i) => body += `${i+1}. ${r.text} – ${r.status}\n`);
+    body += '\n';
+  }
+  if (d.generalSummary) body += `סיכום:\n${d.generalSummary}\n\n`;
+  body += `בברכה,\n${d.author} – ${d.authorRole}\n${d.authorPhone} | ${d.authorEmail}\nwww.nrgredesign.com`;
+
+  const mailtoLink = `mailto:?subject=${subject}&body=${encodeURIComponent(body)}`;
+  window.open(mailtoLink);
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.textContent = msg;
+  Object.assign(t.style, {
+    position:'fixed', bottom:'80px', left:'50%', transform:'translateX(-50%)',
+    background:'#1a1a1a', color:'white', padding:'10px 22px', borderRadius:'8px',
+    fontSize:'14px', fontWeight:'600', zIndex:'999', fontFamily:'Heebo,sans-serif',
+    boxShadow:'0 4px 16px rgba(0,0,0,0.3)'
+  });
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+// ===== SET TODAY =====
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('meeting-date').value = today;
+  // seed with 1 empty row each
+  addFinding(); addFieldFinding(); addRecommendation(); addTimeline(); addRequest();
+});
+
+// ── Firebase ──
+const _fbCfg = {
+  apiKey: "AIzaSyDSz5ZPZIwU4-zJBAMQUGZz-4Cw9bt44SI",
+  authDomain: "energyredesign.firebaseapp.com",
+  projectId: "energyredesign",
+  storageBucket: "energyredesign.firebasestorage.app",
+  messagingSenderId: "28317673306",
+  appId: "1:28317673306:web:5d04e63fceefa3fb40f563"
+};
+if (!firebase.apps.length) firebase.initializeApp(_fbCfg);
+var _fbDb = firebase.firestore();
+
+async function saveMeeting() {
+  var btn = document.getElementById('save-meeting-btn');
+  var orig = btn.textContent;
+  btn.textContent = '⏳ שומר...'; btn.disabled = true;
+  try {
+    var d = getFormData();
+    if (!d.clientName) { showToast('נא להזין שם לקוח לפני השמירה'); btn.textContent = orig; btn.disabled = false; return; }
+    var data = {
+      clientName: d.clientName, contactName: d.contactName,
+      address: d.address, meetingDate: d.meetingDate,
+      visitType: d.visitType, visitBackground: d.visitBackground,
+      findings: d.findings, fieldFindings: d.fieldFindings,
+      recs: d.recs, timeline: d.timeline, requests: d.requests,
+      generalSummary: d.generalSummary, nextMeeting: d.nextMeeting,
+      author: d.author, authorRole: d.authorRole,
+      authorPhone: d.authorPhone, authorEmail: d.authorEmail,
+      saved_at: new Date().toISOString()
+    };
+    const params = new URLSearchParams(window.location.search);
+    const editId = params.get('edit');
+    if (editId) {
+      await _fbDb.collection('energy_meetings').doc(editId).update(data);
+      showToast('✅ הסיכום עודכן בהצלחה');
+    } else {
+      const ref = await _fbDb.collection('energy_meetings').add(data);
+      // Update URL to edit mode
+      history.replaceState(null, '', '?edit=' + ref.id);
+      btn.textContent = '💾 עדכן סיכום';
+      showToast('✅ הסיכום נשמר בהצלחה');
+    }
+  } catch(e) { showToast('שגיאה: ' + e.message); }
+  btn.disabled = false;
+  if (btn.textContent === '⏳ שומר...') btn.textContent = orig;
+}
+
+function exportMeetingPDF() {
+  // Add no-print elements hiding and print
+  document.querySelectorAll('.header-actions, .footer-actions, .btn-add, .remove-btn, .remove-photo').forEach(el => {
+    el.dataset.origDisplay = el.style.display;
+    el.style.display = 'none';
+  });
+  window.print();
+  setTimeout(() => {
+    document.querySelectorAll('[data-orig-display]').forEach(el => {
+      el.style.display = el.dataset.origDisplay || '';
+      delete el.dataset.origDisplay;
+    });
+  }, 500);
+}
+
+// ── Load on edit ──
+(async function() {
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get('edit');
+  if (!editId) return;
+  try {
+    const doc = await _fbDb.collection('energy_meetings').doc(editId).get();
+    if (!doc.exists) return;
+    const d = doc.data();
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val || ''; };
+    set('client-name', d.clientName); set('contact-name', d.contactName);
+    set('address', d.address); set('meeting-date', d.meetingDate);
+    set('visit-type', d.visitType); set('visit-background', d.visitBackground);
+    set('general-summary', d.generalSummary); set('next-meeting', d.nextMeeting);
+    set('author', d.author); set('author-role', d.authorRole);
+    set('author-phone', d.authorPhone); set('author-email', d.authorEmail);
+    // Clear and reload dynamic sections
+    document.getElementById('findings-list').innerHTML = '';
+    (d.findings||[]).forEach(f => addFinding(f.text, f.priority));
+    document.getElementById('field-findings-list').innerHTML = '';
+    (d.fieldFindings||[]).forEach(f => addFieldFinding(f));
+    document.getElementById('recs-list').innerHTML = '';
+    (d.recs||[]).forEach(r => addRecommendation(r.text));
+    document.getElementById('timeline-list').innerHTML = '';
+    (d.timeline||[]).forEach(t => addTimeline(t.desc, t.deadline, t.responsible));
+    document.getElementById('requests-list').innerHTML = '';
+    (d.requests||[]).forEach(r => addRequest(r.text, r.status));
+    document.getElementById('save-meeting-btn').textContent = '💾 עדכן סיכום';
+    showToast('✅ הסיכום נטען לעריכה');
+  } catch(e) { showToast('שגיאה בטעינה: ' + e.message); }
+})();
+
+</script>
+</body>
+</html>

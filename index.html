@@ -1711,6 +1711,17 @@ input[type="color"].de-color-input {
             <div class="home-card-arrow"><i class="fas fa-chevron-left"></i></div>
           </button>
 
+          <button class="home-card" id="home-btn-meeting" onclick="openMeetingSummary()">
+            <div class="home-card-icon" style="background:linear-gradient(135deg,#6a1b9a,#4a148c);">
+              <i class="fas fa-handshake"></i>
+            </div>
+            <div class="home-card-body">
+              <div class="home-card-title">סיכום פגישה ממונה אנרגיה</div>
+              <div class="home-card-desc">יצירת וניהול סיכומי פגישות</div>
+            </div>
+            <div class="home-card-arrow"><i class="fas fa-chevron-left"></i></div>
+          </button>
+
         </div>
 
         <!-- Footer -->
@@ -1742,6 +1753,9 @@ input[type="color"].de-color-input {
       </a>
       <a href="javascript:void(0)" class="nav-item" data-view="reports-list">
         <i class="fas fa-file-alt"></i><span>דוחות שנתיים</span>
+      </a>
+      <a href="javascript:void(0)" class="nav-item" data-view="meetings-list">
+        <i class="fas fa-handshake"></i><span>סיכומי פגישות</span>
       </a>
       <a href="javascript:void(0)" class="nav-item" data-view="new-survey">
         <i class="fas fa-plus-circle"></i><span>סקר חדש</span>
@@ -1874,6 +1888,24 @@ input[type="color"].de-color-input {
             <i class="fas fa-file-alt" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i>
             <div style="font-size:16px;font-weight:600;margin-bottom:8px;">אין דוחות שמורים</div>
             <div style="font-size:13px;">לחץ "דוח חדש" כדי להתחיל</div>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- ══ רשימת סיכומי פגישות ══ -->
+      <div id="view-meetings-list" class="view">
+        <div class="view-header">
+          <h2>סיכומי פגישות ממונה אנרגיה</h2>
+          <button class="btn btn-primary" onclick="openMeetingSummary()">
+            <i class="fas fa-plus"></i> סיכום חדש
+          </button>
+        </div>
+        <div id="meetings-list-container">
+          <div style="text-align:center;padding:60px 20px;color:var(--text-hint);">
+            <i class="fas fa-handshake" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i>
+            <div style="font-size:16px;font-weight:600;margin-bottom:8px;">אין סיכומי פגישות שמורים</div>
+            <div style="font-size:13px;">לחץ "סיכום חדש" כדי להתחיל</div>
           </div>
         </div>
       </div>
@@ -6209,6 +6241,7 @@ function bindBottomNav() {
       else if (view === 'admin-users') openAdminUsers();
       else if (view === 'controls-list') { navigateTo('controls-list'); loadControlsList(); }
       else if (view === 'reports-list') { navigateTo('reports-list'); loadReportsList(); }
+      else if (view === 'meetings-list') { navigateTo('meetings-list'); loadMeetingsList(); }
     });
   });
 }
@@ -6241,7 +6274,7 @@ function bindDropZone(dropId, inputId, target) {
   });
 }
 
-const VIEWS = ['surveys', 'survey-form', 'survey-detail', 'admin-users', 'design-editor', 'controls-list', 'reports-list'];
+const VIEWS = ['surveys', 'survey-form', 'survey-detail', 'admin-users', 'design-editor', 'controls-list', 'reports-list', 'meetings-list'];
 
 function showView(name) {
   VIEWS.forEach(v => { const el = document.getElementById('view-' + v); if (el) el.style.display = 'none'; });
@@ -6368,6 +6401,7 @@ function bindSidebarToggle() {
       else if (view === 'admin-users') openAdminUsers();
       else if (view === 'controls-list') { navigateTo('controls-list'); loadControlsList(); }
       else if (view === 'reports-list') { navigateTo('reports-list'); loadReportsList(); }
+      else if (view === 'meetings-list') { navigateTo('meetings-list'); loadMeetingsList(); }
       else if (view === 'design-editor') openDesignEditor();
     });
   });
@@ -6378,7 +6412,7 @@ function navigateTo(view, title) {
   const homeEl = document.getElementById('screen-home');
   if (homeEl && homeEl.style.display !== 'none') hideHomeScreen();
 
-  const titles = { surveys: 'רשימת סקרים', 'survey-form': 'סקר חדש', 'survey-detail': 'פרטי סקר', 'admin-users': 'ניהול משתמשים', 'controls-list': 'בקרות אנרגיה', 'reports-list': 'דוחות שנתיים' };
+  const titles = { surveys: 'רשימת סקרים', 'survey-form': 'סקר חדש', 'survey-detail': 'פרטי סקר', 'admin-users': 'ניהול משתמשים', 'controls-list': 'בקרות אנרגיה', 'reports-list': 'דוחות שנתיים', 'meetings-list': 'סיכומי פגישות' };
   setTopbarTitle(title || titles[view] || '');
   showView(view);
   document.querySelectorAll('.nav-item').forEach(n => {
@@ -11819,6 +11853,101 @@ async function deleteReport(id) {
     } catch(e) { toast('שגיאה במחיקה', 'error'); }
   });
 }
+
+function openMeetingSummary() {
+  window.open('meeting.html', '_blank');
+}
+
+async function loadMeetingsList() {
+  const container = document.getElementById('meetings-list-container');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-hint);"><i class="fas fa-spinner fa-spin" style="font-size:28px;"></i><div style="margin-top:12px;">טוען...</div></div>';
+  try {
+    const snapshot = await window.fbDb.collection('energy_meetings')
+      .orderBy('saved_at', 'desc').limit(100).get();
+    if (snapshot.empty) {
+      container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-hint);"><i class="fas fa-handshake" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i><div style="font-size:16px;font-weight:600;margin-bottom:8px;">אין סיכומי פגישות שמורים</div><div style="font-size:13px;">לחץ "סיכום חדש" כדי להתחיל</div></div>';
+      return;
+    }
+    container.innerHTML = '<div class="surveys-container">' + snapshot.docs.map(doc => {
+      const d = doc.data();
+      const date = d.saved_at ? new Date(d.saved_at).toLocaleDateString('he-IL') : '—';
+      const meetDate = d.meetingDate ? d.meetingDate.split('-').reverse().join('/') : '—';
+      return `<div class="survey-card">
+        <div class="card-top">
+          <div class="card-icon" style="background:linear-gradient(135deg,#6a1b9a,#4a148c);"><i class="fas fa-handshake" style="color:white;"></i></div>
+          <span class="card-status ready">סיכום פגישה</span>
+        </div>
+        <div class="card-name">${escHtml(d.clientName || '—')}</div>
+        <div class="card-meta">
+          <span><i class="fas fa-calendar-alt"></i> פגישה: ${meetDate}</span>
+          <span><i class="fas fa-user"></i> ${escHtml(d.contactName || '—')}</span>
+          <span><i class="fas fa-map-marker-alt"></i> ${escHtml(d.address || '—')}</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date"><i class="fas fa-save"></i> נשמר: ${date}</span>
+          <div class="card-actions">
+            <button class="btn btn-outline btn-sm" title="ערוך" onclick="openMeetingForEdit('${doc.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-outline btn-sm" title="ייצא PDF" onclick="exportMeetingFromList('${doc.id}')"><i class="fas fa-file-pdf" style="color:#dc2626;"></i></button>
+            <button class="btn btn-danger btn-sm" title="מחק" onclick="deleteMeeting('${doc.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger);">שגיאה: ' + e.message + '</div>';
+  }
+}
+
+function openMeetingForEdit(id) {
+  window.open('meeting.html?edit=' + id, '_blank');
+}
+
+async function exportMeetingFromList(id) {
+  try {
+    const doc = await window.fbDb.collection('energy_meetings').doc(id).get();
+    if (!doc.exists) { toast('לא נמצא הסיכום', 'error'); return; }
+    const d = doc.data();
+    const w = window.open('', '_blank');
+    const meetDate = d.meetingDate ? d.meetingDate.split('-').reverse().join('/') : '—';
+    const row = (k,v) => v ? `<tr><td style="background:#e8f0fe;font-weight:bold;padding:5px 10px;border:1px solid #c5cae9;width:30%;">${k}</td><td style="padding:5px 10px;border:1px solid #c5cae9;">${v}</td></tr>` : '';
+    const listHTML = (items, fn) => items && items.length ? items.map((it,i) => `<div style="margin-bottom:6px;padding:6px 10px;background:#f8f9fa;border-right:3px solid #6a1b9a;border-radius:4px;">${i+1}. ${fn(it)}</div>`).join('') : '<p style="color:#999;">—</p>';
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>סיכום פגישה</title>
+      <style>body{font-family:Arial,sans-serif;direction:rtl;margin:2cm;font-size:11pt;}table{width:100%;border-collapse:collapse;margin-bottom:14px;}h3{color:#6a1b9a;border-bottom:2px solid #6a1b9a;padding-bottom:4px;margin:20px 0 10px;}@page{margin:2cm;}</style>
+      </head><body>
+      <div style="text-align:center;background:#6a1b9a;color:white;padding:20px;margin-bottom:20px;">
+        <h1 style="margin:0;color:white;">🤝 סיכום פגישה — ממונה אנרגיה</h1>
+        <div style="font-size:14pt;margin-top:6px;">${escHtml(d.clientName||'—')}</div>
+        <div style="font-size:10pt;margin-top:4px;opacity:.85;">תאריך פגישה: ${meetDate}</div>
+      </div>
+      <h3>פרטי הפגישה</h3>
+      <table>${row('לקוח',d.clientName)}${row('איש קשר',d.contactName)}${row('כתובת',d.address)}${row('תאריך',meetDate)}${row('סוג ביקור',d.visitType)}</table>
+      ${d.visitBackground ? '<h3>רקע</h3><p>'+escHtml(d.visitBackground)+'</p>' : ''}
+      ${d.findings && d.findings.length ? '<h3>ממצאי סיור</h3>' + listHTML(d.findings, f => `[${f.priority||''}] ${escHtml(f.text||'')}`) : ''}
+      ${d.recs && d.recs.length ? '<h3>המלצות</h3>' + listHTML(d.recs, r => escHtml(r.text||'')) : ''}
+      ${d.timeline && d.timeline.length ? '<h3>תכנית פעולה</h3>' + listHTML(d.timeline, t => `${escHtml(t.desc||'')} | יעד: ${t.deadline||'—'} | אחראי: ${escHtml(t.responsible||'')}`) : ''}
+      ${d.requests && d.requests.length ? '<h3>בקשות</h3>' + listHTML(d.requests, r => `${escHtml(r.text||'')} [${r.status||''}]`) : ''}
+      ${d.generalSummary ? '<h3>סיכום כללי</h3><p>'+escHtml(d.generalSummary)+'</p>' : ''}
+      <div style="margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:10pt;color:#666;">
+        ${escHtml(d.author||'')} | ${escHtml(d.authorRole||'')} | ${escHtml(d.authorPhone||'')} | ${escHtml(d.authorEmail||'')}
+      </div>
+      </body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 500);
+  } catch(e) { toast('שגיאה: ' + e.message, 'error'); }
+}
+
+async function deleteMeeting(id) {
+  showConfirm('מחיקת סיכום', 'האם אתה בטוח שברצונך למחוק את הסיכום?', async () => {
+    try {
+      await window.fbDb.collection('energy_meetings').doc(id).delete();
+      toast('הסיכום נמחק', 'success');
+      loadMeetingsList();
+    } catch(e) { toast('שגיאה במחיקה', 'error'); }
+  });
+}
+
 </script>
 </body>
 </html>
