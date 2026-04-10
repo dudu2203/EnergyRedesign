@@ -2350,14 +2350,18 @@ input[type="color"].de-color-input {
                   </div>
                 </div>
               </div>
-              <!-- ══ כפתור יבוא אקסל לחשמל ══ -->
-              <div style="margin-top:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
-                <button type="button" class="btn btn-outline btn-sm" id="btn-import-elec-excel" onclick="openImportExcel('elec')">
-                  <i class="fas fa-file-excel" style="color:#217346;"></i> יבוא מאקסל (חשמל)
+              <!-- ══ כפתור יבוא אקסל מאוחד ══ -->
+              <div style="margin-top:10px;margin-bottom:16px;display:flex;align-items:center;gap:12px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:10px;padding:12px 16px;">
+                <i class="fas fa-file-excel" style="color:#217346;font-size:22px;"></i>
+                <div>
+                  <div style="font-weight:700;font-size:14px;color:#1b5e20;">יבוא נתונים מאקסל — חשמל, גז ודלק</div>
+                  <div style="font-size:11px;color:#388e3c;margin-top:2px;">הקובץ צריך להכיל 3 גיליונות: <strong>חשמל</strong>, <strong>גז</strong>, <strong>דלק</strong> — בכל גיליון עד 4 טבלאות שנתיות</div>
+                </div>
+                <button type="button" class="btn btn-sm" style="margin-right:auto;background:#217346;color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;" onclick="openUnifiedImportExcel()">
+                  <i class="fas fa-upload"></i> בחר קובץ
                 </button>
-                <span style="font-size:11px;color:var(--text-hint);">קובץ עם עמודות: חודש / פסגה kWh / פסגה ₪ / שפל kWh / שפל ₪</span>
               </div>
-              <input type="file" id="import-elec-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImportExcel(this,'elec')" />
+              <input type="file" id="import-unified-input" accept=".xlsx,.xls" style="display:none;" onchange="handleUnifiedImportExcel(this)" />
 
               <!-- ══ גרפי חשמל ══ -->
               <div id="elec-charts-section" style="margin-top:20px;display:none;">
@@ -2443,7 +2447,6 @@ input[type="color"].de-color-input {
               <div class="elec-section" id="gas-tables-section" style="margin-top:28px;">
                 <div class="elec-section-title" style="cursor:pointer;" id="gas-section-toggle">
                   <i class="fas fa-fire" style="color:#1565c0;"></i> גז — פירוט חודשי
-                  <button type="button" class="btn btn-outline btn-sm" style="margin-right:auto;font-size:11px;padding:3px 10px;" onclick="event.stopPropagation();openImportExcel('gas')"><i class="fas fa-file-excel" style="color:#217346;"></i> יבוא אקסל</button>
                   <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-right:10px;">(4 טבלאות שנתיות)</span>
                   <i class="fas fa-chevron-down" id="gas-chevron" style="font-size:12px;margin-right:auto;margin-left:0;color:var(--text-hint);transition:transform .3s;"></i>
                 </div>
@@ -2543,13 +2546,11 @@ input[type="color"].de-color-input {
               </div>
               <!-- ══ סוף סקציית גז ══ -->
 
-              <input type="file" id="import-gas-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImportExcel(this,'gas')" />
 
               <!-- ══ סקציית דלקים ══ -->
               <div class="elec-section" id="fuel-tables-section" style="margin-top:28px;">
                 <div class="elec-section-title" style="cursor:pointer;" id="fuel-section-toggle">
                   <i class="fas fa-gas-pump" style="color:#bf360c;"></i> דלקים — פירוט חודשי
-                  <button type="button" class="btn btn-outline btn-sm" style="margin-right:auto;font-size:11px;padding:3px 10px;" onclick="event.stopPropagation();openImportExcel('fuel')"><i class="fas fa-file-excel" style="color:#217346;"></i> יבוא אקסל</button>
                   <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-right:10px;">(4 טבלאות שנתיות)</span>
                   <i class="fas fa-chevron-down" id="fuel-chevron" style="font-size:12px;margin-right:auto;margin-left:0;color:var(--text-hint);transition:transform .3s;"></i>
                 </div>
@@ -2658,7 +2659,6 @@ input[type="color"].de-color-input {
                 <strong id="fuel-cost-per-liter">—</strong>
                 <span>₪/ליטר</span>
               </div>
-              <input type="file" id="import-fuel-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImportExcel(this,'fuel')" />
               <!-- ══ סוף סקציית דלקים ══ -->
 
               <!-- ══ גרף גז מול דלקים ══ -->
@@ -7907,16 +7907,253 @@ function renderElecCharts() {
 }
 
 // ══════════════════════════════════════════════
-// יבוא אקסל לטבלאות חשמל / גז / דלק
 // ══════════════════════════════════════════════
-var _importTarget = null;
+// יבוא אקסל מאוחד — חשמל / גז / דלק
+// ══════════════════════════════════════════════
 
-function openImportExcel(type) {
-  _importTarget = type;
-  var inp = document.getElementById('import-' + type + '-input');
+function openUnifiedImportExcel() {
+  var inp = document.getElementById('import-unified-input');
   if (inp) inp.click();
 }
 
+function handleUnifiedImportExcel(input) {
+  var file = input.files[0];
+  if (!file) return;
+  input.value = '';
+
+  if (typeof XLSX === 'undefined') {
+    toast('טוען ספריית אקסל...', 'info');
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+    s.onload = function() { _parseUnifiedExcel(file); };
+    s.onerror = function() { toast('שגיאה בטעינת ספריית אקסל', 'error'); };
+    document.head.appendChild(s);
+  } else {
+    _parseUnifiedExcel(file);
+  }
+}
+
+function _parseUnifiedExcel(file) {
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var wb = XLSX.read(e.target.result, { type: 'array' });
+      var results = { elec: 0, gas: 0, fuel: 0 };
+
+      // מיפוי שמות גיליונות
+      var sheetMap = {};
+      wb.SheetNames.forEach(function(name) {
+        var n = name.trim().toLowerCase();
+        if (n === 'חשמל' || n === 'electricity' || n === 'elec') sheetMap['elec'] = name;
+        else if (n === 'גז' || n === 'gas') sheetMap['gas'] = name;
+        else if (n === 'דלק' || n === 'דלקים' || n === 'fuel') sheetMap['fuel'] = name;
+      });
+
+      if (!sheetMap['elec'] && !sheetMap['gas'] && !sheetMap['fuel']) {
+        toast('לא נמצאו גיליונות מתאימים (חשמל / גז / דלק)', 'error');
+        return;
+      }
+
+      // עיבוד כל גיליון
+      if (sheetMap['elec']) results.elec = _importElecSheet(wb.Sheets[sheetMap['elec']]);
+      if (sheetMap['gas'])  results.gas  = _importGasSheet(wb.Sheets[sheetMap['gas']]);
+      if (sheetMap['fuel']) results.fuel = _importFuelSheet(wb.Sheets[sheetMap['fuel']]);
+
+      scheduleAutosave();
+      var msg = [];
+      if (results.elec > 0) msg.push('חשמל: ' + results.elec + ' טבלאות');
+      if (results.gas  > 0) msg.push('גז: ' + results.gas + ' טבלאות');
+      if (results.fuel > 0) msg.push('דלק: ' + results.fuel + ' טבלאות');
+      if (msg.length > 0) toast('יובא בהצלחה — ' + msg.join(' | ') + ' ✓', 'success');
+      else toast('לא נמצאו נתונים תקינים בקובץ', 'warning');
+
+    } catch(err) {
+      console.error('Unified import error:', err);
+      toast('שגיאה בקריאת הקובץ: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── עזרים ──
+var MONTHS_MAP_IMPORT = {};
+['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'].forEach(function(m,i){ MONTHS_MAP_IMPORT[m]=i; });
+['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach(function(m,i){ MONTHS_MAP_IMPORT[m]=i; });
+[1,2,3,4,5,6,7,8,9,10,11,12].forEach(function(m,i){ MONTHS_MAP_IMPORT[String(m)]=i; });
+
+function _getMonthIdx(val) {
+  var v = String(val||'').trim().toLowerCase().replace(/[.\-]/g,'');
+  if (MONTHS_MAP_IMPORT[v] !== undefined) return MONTHS_MAP_IMPORT[v];
+  for (var k in MONTHS_MAP_IMPORT) { if (k.indexOf(v)===0||v.indexOf(k)===0) return MONTHS_MAP_IMPORT[k]; }
+  var n = parseInt(v); if (!isNaN(n) && n>=1 && n<=12) return n-1;
+  return -1;
+}
+
+function _sheetToRows(ws) {
+  if (!ws || !ws['!ref']) return [];
+  return XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+}
+
+// מציאת כל טבלאות השנה בגיליון
+// פורמט: שורת שנה = ('שנה', 2026) או ('שנה ', 2023) וכו'
+function _findYearBlocks(rows) {
+  var blocks = [];
+  for (var i = 0; i < rows.length; i++) {
+    var c0 = String(rows[i][0]||'').trim();
+    var c1 = rows[i][1];
+    // אפשרות 1: ('שנה', 2026) — שנה בעמודה 1
+    if (c0 === 'שנה' && c1 && /^\d{4}$/.test(String(c1).trim())) {
+      blocks.push({ year: parseInt(c1), startRow: i + 1 }); // +1: block functions skip header
+    }
+    // אפשרות 2: ('2026', ...) — שנה בעמודה 0
+    else if (/^\d{4}$/.test(c0)) {
+      blocks.push({ year: parseInt(c0), startRow: i + 1 });
+    }
+  }
+  return blocks;
+}
+
+// ── ייבוא גיליון חשמל ──
+function _importElecSheet(ws) {
+  var rows = _sheetToRows(ws);
+  var blocks = _findYearBlocks(rows);
+  if (blocks.length === 0) {
+    // fallback: try single table
+    _importElecBlock(rows, 0, rows.length, 1);
+    return 1;
+  }
+  var imported = 0;
+  blocks.forEach(function(block, bi) {
+    var endRow = bi + 1 < blocks.length ? blocks[bi+1].startRow - 1 : rows.length;
+    if (_importElecBlock(rows, block.startRow, endRow, bi + 1, block.year)) imported++;
+  });
+  return imported;
+}
+
+function _importElecBlock(rows, startRow, endRow, tableIdx, year) {
+  var elecRows = new Array(12).fill(null).map(function(){ return {peak_kw:'',peak_nis:'',low_kw:'',low_nis:''}; });
+  var hasAny = false;
+  var monthCount = 0;
+  for (var i = startRow; i < endRow && i < rows.length; i++) {
+    var r = rows[i];
+    var c0 = String(r[0]||'').trim();
+    // דלג על שורת כותרת (חודש) ושורת סה"כ
+    if (c0 === 'חודש' || c0 === 'סה"כ' || c0 === 'סה\"כ' || c0 === '' ) continue;
+    var mi = _getMonthIdx(c0);
+    if (mi < 0 || mi > 11) mi = monthCount;
+    if (mi >= 0 && mi < 12) {
+      // נקה ערכים — אם הם נוסחאות (string עם =) תדלג
+      var pk = String(r[1]||''); if (pk.startsWith('=')) pk = '';
+      var pn = String(r[2]||''); if (pn.startsWith('=')) pn = '';
+      var lk = String(r[3]||''); if (lk.startsWith('=')) lk = '';
+      var ln = String(r[4]||''); if (ln.startsWith('=')) ln = '';
+      elecRows[mi] = {
+        peak_kw:  pk.replace(/,/g,''),
+        peak_nis: pn.replace(/,/g,''),
+        low_kw:   lk.replace(/,/g,''),
+        low_nis:  ln.replace(/,/g,'')
+      };
+      if (pk||pn||lk||ln) hasAny = true;
+      monthCount++;
+    }
+  }
+  if (!hasAny) return false;
+  // מצא או צור טבלה עם המספר הזה
+  if (App && App._elecData) {
+    if (!App._elecData[tableIdx]) App._elecData[tableIdx] = { year: year||'', rows: new Array(12).fill(null).map(function(){ return {peak_kw:'',peak_nis:'',low_kw:'',low_nis:''}; }) };
+    App._elecData[tableIdx].rows = elecRows;
+    if (year) App._elecData[tableIdx].year = year;
+    renderElecBody(tableIdx);
+    if (typeof _afterElecDataChange === 'function') _afterElecDataChange();
+  }
+  return true;
+}
+
+// ── ייבוא גיליון גז ──
+function _importGasSheet(ws) {
+  var rows = _sheetToRows(ws);
+  var blocks = _findYearBlocks(rows);
+  if (blocks.length === 0) { _importGasBlock(rows, 0, rows.length, 1); return 1; }
+  var imported = 0;
+  blocks.forEach(function(block, bi) {
+    var endRow = bi + 1 < blocks.length ? blocks[bi+1].startRow - 1 : rows.length;
+    if (_importGasBlock(rows, block.startRow, endRow, bi + 1, block.year)) imported++;
+  });
+  return imported;
+}
+
+function _importGasBlock(rows, startRow, endRow, tableIdx, year) {
+  var gasRows = new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; });
+  var hasAny = false;
+  var monthCount = 0;
+  for (var i = startRow; i < endRow && i < rows.length; i++) {
+    var r = rows[i];
+    var c0 = String(r[0]||'').trim();
+    if (c0 === 'חודש' || c0 === 'סה"כ' || c0 === 'סה\"כ' || c0 === '') continue;
+    var mi = _getMonthIdx(c0);
+    if (mi < 0 || mi > 11) mi = monthCount;
+    if (mi >= 0 && mi < 12) {
+      var qty  = String(r[1]||''); if (qty.startsWith('='))  qty  = '';
+      var cost = String(r[2]||''); if (cost.startsWith('=')) cost = '';
+      gasRows[mi] = { qty: qty.replace(/,/g,''), cost: cost.replace(/,/g,'') };
+      if (qty||cost) hasAny = true;
+      monthCount++;
+    }
+  }
+  if (!hasAny) return false;
+  if (App && App._gasData && App._gasData.tables) {
+    if (!App._gasData.tables[tableIdx]) App._gasData.tables[tableIdx] = { year: year||'', rows: new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; }) };
+    App._gasData.tables[tableIdx].rows = gasRows;
+    if (year) App._gasData.tables[tableIdx].year = year;
+    renderGasBody(tableIdx);
+  }
+  return true;
+}
+
+// ── ייבוא גיליון דלק ──
+function _importFuelSheet(ws) {
+  var rows = _sheetToRows(ws);
+  var blocks = _findYearBlocks(rows);
+  if (blocks.length === 0) { _importFuelBlock(rows, 0, rows.length, 1); return 1; }
+  var imported = 0;
+  blocks.forEach(function(block, bi) {
+    var endRow = bi + 1 < blocks.length ? blocks[bi+1].startRow - 1 : rows.length;
+    if (_importFuelBlock(rows, block.startRow, endRow, bi + 1, block.year)) imported++;
+  });
+  return imported;
+}
+
+function _importFuelBlock(rows, startRow, endRow, tableIdx, year) {
+  var fuelRows = new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; });
+  var hasAny = false;
+  var monthCount = 0;
+  for (var i = startRow; i < endRow && i < rows.length; i++) {
+    var r = rows[i];
+    var c0 = String(r[0]||'').trim();
+    if (c0 === 'חודש' || c0 === 'סה"כ' || c0 === 'סה\"כ' || c0 === '') continue;
+    var mi = _getMonthIdx(c0);
+    if (mi < 0 || mi > 11) mi = monthCount;
+    if (mi >= 0 && mi < 12) {
+      var qty  = String(r[1]||''); if (qty.startsWith('='))  qty  = '';
+      var cost = String(r[2]||''); if (cost.startsWith('=')) cost = '';
+      fuelRows[mi] = { qty: qty.replace(/,/g,''), cost: cost.replace(/,/g,'') };
+      if (qty||cost) hasAny = true;
+      monthCount++;
+    }
+  }
+  if (!hasAny) return false;
+  if (App && App._fuelData && App._fuelData.tables) {
+    if (!App._fuelData.tables[tableIdx]) App._fuelData.tables[tableIdx] = { year: year||'', rows: new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; }) };
+    App._fuelData.tables[tableIdx].rows = fuelRows;
+    if (year) App._fuelData.tables[tableIdx].year = year;
+    renderFuelBody(tableIdx);
+  }
+  return true;
+}
+
+// ── Legacy functions (kept for backward compatibility) ──
+var _importTarget = null;
+function openImportExcel(type) { openUnifiedImportExcel(); }
 function handleImportExcel(input, type) {
   var file = input.files[0];
   if (!file) return;
