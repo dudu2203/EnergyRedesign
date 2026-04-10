@@ -2718,8 +2718,6 @@ input[type="color"].de-color-input {
 
           <div class="category-tabs" id="category-tabs">
             <button class="cat-tab active" data-cat="all">הכל</button>
-            <button class="cat-tab" data-cat="lighting"><i class="fas fa-lightbulb"></i> תאורה</button>
-            <button class="cat-tab" data-cat="hvac"><i class="fas fa-wind"></i> מיזוג</button>
             <button class="cat-tab" data-cat="cooling"><i class="fas fa-thermometer-half"></i> קירור</button>
             <button class="cat-tab" data-cat="chiller"><i class="fas fa-snowflake"></i> צ'ילרים</button>
             <button class="cat-tab" data-cat="compressor"><i class="fas fa-compress-arrows-alt"></i> מדחסים</button>
@@ -3435,8 +3433,6 @@ input[type="color"].de-color-input {
           <label>קטגוריה</label>
           <select id="sys-category">
             <option value="">בחר...</option>
-            <option value="lighting">💡 תאורה</option>
-            <option value="hvac">❄️ מיזוג אוויר</option>
             <option value="cooling">🌡️ מערכות קירור</option>
             <option value="chiller">🧊 צ'ילרים</option>
             <option value="compressor">⚙️ מדחסי אוויר</option>
@@ -3587,7 +3583,7 @@ input[type="color"].de-color-input {
           </div>
           <div class="form-group req">
             <label>כוח סוס (כ"ס)</label>
-            <select id="cool-hp" onchange="coolingHpChanged()">
+            <select id="cool-hp">
               <option value="">בחר...</option>
               <option value="1.0">1.0 כ"ס</option>
               <option value="1.5">1.5 כ"ס</option>
@@ -4769,7 +4765,8 @@ function _sysResetAllForms() {
   ['mo-type-free','mo-hours','mo-days'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='none';el.value='';}});
   // reset cooling
   ['cool-location','cool-company','cool-year','cool-btu','cool-kw'].forEach(id=>setVal(id,''));
-  setVal('cool-type',''); setVal('cool-hp',''); setVal('cool-units','1'); setVal('cool-replace',''); setVal('cool-load','0.7');
+  setVal('cool-type',''); setVal('cool-hp','');
+  const _coolKwEl = document.getElementById('cool-kw'); if (_coolKwEl) _coolKwEl.removeAttribute('readonly'); setVal('cool-units','1'); setVal('cool-replace',''); setVal('cool-load','0.7');
   setVal('cool-hours-sel',''); setVal('cool-days-sel','');
   ['cool-type-free','cool-hp-free','cool-hours','cool-days'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='none';el.value='';}});
   const coolKwReset=document.getElementById('cool-kw'); if(coolKwReset) coolKwReset.removeAttribute('readonly');
@@ -5108,8 +5105,21 @@ function bindSystemModal() {
   // cooling HP free toggle
   document.getElementById('cool-hp')?.addEventListener('change', (e) => {
     const freeEl = document.getElementById('cool-hp-free');
-    if (freeEl) { freeEl.style.display = e.target.value === '__free__' ? '' : 'none'; }
-    coolingHpChanged();
+    if (freeEl) { freeEl.style.display = e.target.value === '__free__' ? '' : 'none'; if (e.target.value !== '__free__') freeEl.value = ''; }
+    const btuEl = document.getElementById('cool-btu');
+    const kwEl  = document.getElementById('cool-kw');
+    const val = e.target.value;
+    if (val && val !== '__free__') {
+      const entry = COOLING_HP_TABLE[val];
+      if (entry) {
+        if (btuEl) btuEl.value = entry.btu;
+        if (kwEl)  { kwEl.value = entry.kw; kwEl.setAttribute('readonly',''); }
+      }
+    } else if (val === '__free__') {
+      if (btuEl) btuEl.value = '';
+      if (kwEl)  { kwEl.value = ''; kwEl.removeAttribute('readonly'); }
+    }
+    updateCalcPreview();
   });
   // motor type free-text toggle
   document.getElementById('mo-type')?.addEventListener('change', (e) => {
@@ -6513,7 +6523,7 @@ function createEmptySurvey() {
     maintenance_manager_name: '', maintenance_manager_phone: '',
     finance_contact_name: '', finance_contact_phone: '',
     electricity_supplier: '', voltage_level: '',
-    transformers_count: 0, has_on_site_generation: false,
+    transformers_count: '', has_on_site_generation: false,
     energy_sources: [], transformers: [], systems: [], spaces: [],
     elec_table_1: null, elec_table_2: null, elec_calc_rows: null
   };
@@ -6571,7 +6581,7 @@ function populateFormFields(s) {
     if (s.finance_contact_name) legacyContacts.push({ role: 'אחראי חשבונות', name: s.finance_contact_name, phone: s.finance_contact_phone||'', email: '' });
     initContactsList(legacyContacts);
   }
-  setVal('f-elec-supplier', s.electricity_supplier); setVal('f-transformers-count', s.transformers_count);
+  setVal('f-elec-supplier', s.electricity_supplier); setVal('f-transformers-count', s.transformers_count > 0 ? s.transformers_count : '');
   setChecked('f-generation', s.has_on_site_generation);
   toggleSolarSection(!!s.has_on_site_generation);
   setVal('f-elec-infra-notes', s.elec_infra_notes);
@@ -6604,8 +6614,24 @@ function renderContactsList() {
           <input type="text" class="cnt-name" data-ci="${i}" value="${escHtmlAttr(c.name||'')}" placeholder="שם מלא..." style="width:100%;" oninput="_contactRows[${i}].name=this.value" />
         </div>
         <div class="form-group" style="margin-bottom:0;">
-          <label style="font-size:12px;">נייד</label>
-          <input type="tel" class="cnt-phone" data-ci="${i}" value="${escHtmlAttr(c.phone||'')}" placeholder="05X-XXXXXXX" style="width:100%;" inputmode="numeric" oninput="_contactRows[${i}].phone=this.value" />
+          <label style="font-size:12px;">טלפון</label>
+          <div class="phone-input-wrap">
+            <select class="phone-prefix-sel cnt-prefix" data-ci="${i}" onchange="_contactRows[${i}].prefix=this.value">
+              <option value="050" ${(c.prefix||'050')==='050'?'selected':''}>050</option>
+              <option value="051" ${(c.prefix||'050')==='051'?'selected':''}>051</option>
+              <option value="052" ${(c.prefix||'050')==='052'?'selected':''}>052</option>
+              <option value="053" ${(c.prefix||'050')==='053'?'selected':''}>053</option>
+              <option value="054" ${(c.prefix||'050')==='054'?'selected':''}>054</option>
+              <option value="055" ${(c.prefix||'050')==='055'?'selected':''}>055</option>
+              <option value="058" ${(c.prefix||'050')==='058'?'selected':''}>058</option>
+              <option value="02" ${(c.prefix||'050')==='02'?'selected':''}>02</option>
+              <option value="03" ${(c.prefix||'050')==='03'?'selected':''}>03</option>
+              <option value="04" ${(c.prefix||'050')==='04'?'selected':''}>04</option>
+              <option value="08" ${(c.prefix||'050')==='08'?'selected':''}>08</option>
+              <option value="09" ${(c.prefix||'050')==='09'?'selected':''}>09</option>
+            </select>
+            <input type="tel" class="cnt-phone" data-ci="${i}" value="${escHtmlAttr(c.phone||'')}" placeholder="1234567" style="flex:1;" inputmode="numeric" maxlength="7" oninput="this.value=this.value.replace(/[^0-9]/g,'').slice(0,7);_contactRows[${i}].phone=this.value" />
+          </div>
         </div>
         <div class="form-group" style="margin-bottom:0;">
           <label style="font-size:12px;">מייל</label>
@@ -7832,15 +7858,108 @@ function _parseImportFile(file, type) {
   reader.onload = function(e) {
     try {
       var wb = XLSX.read(e.target.result, { type: 'array' });
-      var ws = wb.Sheets[wb.SheetNames[0]];
-      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      _applyImportedData(rows, type);
+      // בדוק אם יש גיליונות עם שמות שנה (4 ספרות)
+      var yearSheets = wb.SheetNames.filter(function(n) { return /^\d{4}$/.test(n.trim()); });
+      if (yearSheets.length > 0) {
+        // מצב מרובה שנים - כל גיליון = שנה
+        _applyImportedDataMultiYear(wb, yearSheets, type);
+      } else {
+        // מצב רגיל - גיליון ראשון
+        var ws = wb.Sheets[wb.SheetNames[0]];
+        var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        _applyImportedData(rows, type);
+      }
     } catch(err) {
       console.error('Import error:', err);
       toast('שגיאה בקריאת הקובץ: ' + err.message, 'error');
     }
   };
   reader.readAsArrayBuffer(file);
+}
+
+function _applyImportedDataMultiYear(wb, yearSheets, type) {
+  var imported = 0;
+  yearSheets.forEach(function(sheetName) {
+    var year = parseInt(sheetName.trim());
+    var ws = wb.Sheets[sheetName];
+    var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+    rows = rows.filter(function(r){ return r.some(function(c){ return String(c).trim() !== ''; }); });
+
+    var MONTHS_MAP = {};
+    ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'].forEach(function(m,i){ MONTHS_MAP[m]=i; });
+    ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach(function(m,i){ MONTHS_MAP[m]=i; });
+    [1,2,3,4,5,6,7,8,9,10,11,12].forEach(function(m,i){ MONTHS_MAP[String(m)]=i; });
+
+    function getMonthIdx(val) {
+      var v = String(val).trim().toLowerCase().replace(/[.\-]/g,'');
+      if (MONTHS_MAP[v] !== undefined) return MONTHS_MAP[v];
+      for (var k in MONTHS_MAP) { if (k.indexOf(v)===0||v.indexOf(k)===0) return MONTHS_MAP[k]; }
+      var n = parseInt(v); if (!isNaN(n) && n>=1 && n<=12) return n-1;
+      return -1;
+    }
+
+    var startRow = (rows.length > 0 && isNaN(parseFloat(rows[0][0])) && isNaN(parseFloat(rows[0][1]))) ? 1 : 0;
+
+    if (type === 'elec') {
+      var elecRows = new Array(12).fill(null).map(function(){ return {peak_kw:'',peak_nis:'',low_kw:'',low_nis:''}; });
+      var hasAny = false;
+      for (var i = startRow; i < rows.length && i-startRow < 15; i++) {
+        var r = rows[i]; var mi = getMonthIdx(r[0]);
+        if (mi < 0 || mi > 11) mi = i-startRow;
+        if (mi >= 0 && mi < 12) {
+          elecRows[mi] = { peak_kw:String(r[1]||'').replace(/,/g,''), peak_nis:String(r[2]||'').replace(/,/g,''), low_kw:String(r[3]||'').replace(/,/g,''), low_nis:String(r[4]||'').replace(/,/g,'') };
+          if (r[1]||r[2]||r[3]||r[4]) hasAny = true;
+        }
+      }
+      if (hasAny && App && App._elecData) {
+        // חפש טבלה קיימת עם אותה שנה, אחרת הוסף חדשה
+        var tableIdx = Object.keys(App._elecData).find(function(k){ return App._elecData[k].year == year; });
+        if (!tableIdx) {
+          // הוסף טבלה חדשה
+          var newIdx = Object.keys(App._elecData).length + 1;
+          App._elecData[newIdx] = { year: year, rows: elecRows };
+          if (typeof addElecTable === 'function') addElecTable(year);
+        } else {
+          App._elecData[tableIdx].rows = elecRows;
+          renderElecBody(parseInt(tableIdx));
+        }
+        if (typeof _afterElecDataChange === 'function') _afterElecDataChange();
+        imported++;
+      }
+    } else if (type === 'gas') {
+      var gasRows = new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; });
+      var hasAny = false;
+      for (var i = startRow; i < rows.length && i-startRow < 15; i++) {
+        var r = rows[i]; var mi = getMonthIdx(r[0]);
+        if (mi < 0 || mi > 11) mi = i-startRow;
+        if (mi >= 0 && mi < 12) { gasRows[mi] = {qty:String(r[1]||'').replace(/,/g,''),cost:String(r[2]||'').replace(/,/g,'')}; if(r[1]||r[2]) hasAny=true; }
+      }
+      if (hasAny && App && App._gasData && App._gasData.tables) {
+        var tableIdx = Object.keys(App._gasData.tables).find(function(k){ return App._gasData.tables[k].year == year; });
+        if (!tableIdx) { var ni=Object.keys(App._gasData.tables).length+1; App._gasData.tables[ni]={year:year,rows:gasRows}; if(typeof addGasTable==='function') addGasTable(year); }
+        else { App._gasData.tables[tableIdx].rows=gasRows; renderGasBody(parseInt(tableIdx)); }
+        imported++;
+      }
+    } else if (type === 'fuel') {
+      var fuelRows = new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; });
+      var hasAny = false;
+      for (var i = startRow; i < rows.length && i-startRow < 15; i++) {
+        var r = rows[i]; var mi = getMonthIdx(r[0]);
+        if (mi < 0 || mi > 11) mi = i-startRow;
+        if (mi >= 0 && mi < 12) { fuelRows[mi] = {qty:String(r[1]||'').replace(/,/g,''),cost:String(r[2]||'').replace(/,/g,'')}; if(r[1]||r[2]) hasAny=true; }
+      }
+      if (hasAny && App && App._fuelData && App._fuelData.tables) {
+        var tableIdx = Object.keys(App._fuelData.tables).find(function(k){ return App._fuelData.tables[k].year == year; });
+        if (!tableIdx) { var ni=Object.keys(App._fuelData.tables).length+1; App._fuelData.tables[ni]={year:year,rows:fuelRows}; if(typeof addFuelTable==='function') addFuelTable(year); }
+        else { App._fuelData.tables[tableIdx].rows=fuelRows; renderFuelBody(parseInt(tableIdx)); }
+        imported++;
+      }
+    }
+  });
+
+  scheduleAutosave();
+  if (imported > 0) toast('יובאו נתונים מ-' + imported + ' שנים בהצלחה ✓', 'success');
+  else toast('לא נמצאו נתונים תקינים בקובץ', 'warning');
 }
 
 function _applyImportedData(rows, type) {
@@ -9887,19 +10006,20 @@ function exportSurveyWord(s) {
   const MONTHS_W = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
 
   const wRow = (k, v) => `<tr>
-    <td style="background:#e8f0fe;font-weight:bold;padding:5px 10px;border:1px solid #c5cae9;width:40%;direction:rtl;">${k}</td>
-    <td style="padding:5px 10px;border:1px solid #c5cae9;direction:rtl;">${v != null ? String(v) : '—'}</td>
+    <td style="background:#f8f9fa;font-weight:600;padding:4px 8px;border:1px solid #e0e0e0;width:38%;vertical-align:top;direction:rtl;">${k}</td>
+    <td style="padding:4px 8px;border:1px solid #e0e0e0;direction:rtl;">${v != null && v !== '' ? String(v) : '—'}</td>
   </tr>`;
 
   const sectionHead = (icon, title) => `
-    <h2 style="color:#1a73e8;border-bottom:2px solid #1a73e8;padding-bottom:4px;font-family:Arial,sans-serif;direction:rtl;">${icon} ${title}</h2>`;
+    <h3 style="font-size:12pt;background:#e8f0fe;color:#1a73e8;padding:5px 10px;margin:14px 0 8px 0;border-right:4px solid #1a73e8;page-break-after:avoid;">${icon} ${title}</h3>`;
 
   // Page 1: Site details only
   const page1 = `
-    <div style="text-align:center;background:#1a73e8;color:#fff;padding:16px;margin-bottom:20px;font-family:Arial,sans-serif;">
-      <h1 style="margin:0;font-size:22pt;">⚡ מערכת סקרי אנרגיה</h1>
-      <div style="font-size:16pt;margin-top:6px;">${escHtml(s.site_name || '—')}</div>
-      <div style="font-size:10pt;margin-top:8px;opacity:.9;">
+    <div style="text-align:center;background:linear-gradient(135deg,#0f172a,#1e3a5f,#1a73e8);color:#fff;padding:24px 16px;margin-bottom:20px;font-family:Arial,sans-serif;">
+      <div style="font-size:36pt;margin-bottom:8px;">⚡</div>
+      <h1 style="margin:0;font-size:22pt;font-weight:800;">מערכת סקרי אנרגיה</h1>
+      <div style="font-size:16pt;margin-top:8px;font-weight:700;">${escHtml(s.site_name || '—')}</div>
+      <div style="font-size:10pt;margin-top:10px;opacity:.85;">
         תאריך הפקה: ${printDate} &nbsp;|&nbsp; סוקר: ${escHtml(s.surveyor_name || s.created_by || '—')} &nbsp;|&nbsp; סטטוס: ${STATUS_LABELS[s.status] || 'טיוטה'}
       </div>
     </div>
@@ -10185,9 +10305,11 @@ function exportSurveyWord(s) {
       <title>סיכום סקר אנרגיה - ${escHtml(s.site_name||'—')}</title>
       <!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom><w:DoNotOptimizeForBrowser/></w:WordDocument></xml><![endif]-->
       <style>
-        body { font-family: Arial, sans-serif; direction: rtl; margin: 2cm; }
-        table { width: 100%; border-collapse: collapse; }
-        @page { margin: 2cm; }
+        body { font-family: Arial, sans-serif; direction: rtl; margin: 1.5cm 2cm; font-size: 11pt; color: #202124; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        h3 { page-break-after: avoid; }
+        @page { margin: 1.5cm 2cm; }
+        tr { page-break-inside: avoid; }
       </style>
     </head>
     <body dir="rtl">
