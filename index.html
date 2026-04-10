@@ -6230,7 +6230,7 @@ async function loadSurveys() {
   const deleted = lsGetDeleted(); // IDs the user deleted on this device
 
   try {
-    const res = const __snapshot = await window.fbDb.collection('energy_surveys').limit(200).get();
+    const __snapshot = await window.fbDb.collection('energy_surveys').limit(200).get();
     if (true) {
       const serverRows = __snapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), sync_status: 'synced' })).filter(s => !s.deleted)
         .filter(s => {
@@ -8172,7 +8172,7 @@ async function refreshSurveysFromServer(showFeedback = false) {
   if (!App.isOnline) return;
   const deleted = lsGetDeleted();
   try {
-    const res = const __snap2 = await window.fbDb.collection('energy_surveys').limit(200).get();
+    const __snap2 = await window.fbDb.collection('energy_surveys').limit(200).get();
     if (!__snap2) return;
     const serverRows = __snap2.docs.map(doc => ({ id: doc.id, ...doc.data(), sync_status: 'synced' })).filter(s => !s.deleted)
       .filter(s => !s.deleted && !deleted.includes(s.id))
@@ -9087,7 +9087,7 @@ async function loadUsers() {
 
   // 2. Try to get fresh data from server
   try {
-    const res = const __usersSnap = await window.fbDb.collection('app_users').limit(200).get();
+    const __usersSnap = await window.fbDb.collection('app_users').limit(200).get();
     if (!__usersSnap) return;
     const serverUsers = __usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
       .map(u => ({
