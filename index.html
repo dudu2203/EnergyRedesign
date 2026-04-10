@@ -9140,11 +9140,9 @@ async function syncPendingUsers() {
   for (const u of pending) {
     u._syncing = true;
     try {
-      const res = await fbSaveUser({ id: u.id, username: u.username, name: u.name, password: u.password, role: u.role, avatar: u.avatar });
-      // Firebase: user saved
-        u._dbRow    = true;
-        lsSaveUsers(getExtraUsers());
-      }
+      await fbSaveUser({ id: u.id, username: u.username, name: u.name, password: u.password, role: u.role, avatar: u.avatar });
+      u._dbRow = true;
+      lsSaveUsers(getExtraUsers());
     } catch {}
     delete u._syncing;
   }
@@ -10730,7 +10728,7 @@ async function deSaveSettings(settingsObj) {
       if (existingId) {
         /* Firebase: design_settings not implemented */
       } else {
-        const res = /* Firebase: design_settings not implemented */
+        /* Firebase: design_settings not implemented */
       }
     } catch(e) { /* offline */ }
   });
