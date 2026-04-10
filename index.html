@@ -9141,9 +9141,7 @@ async function syncPendingUsers() {
     u._syncing = true;
     try {
       const res = await fbSaveUser({ id: u.id, username: u.username, name: u.name, password: u.password, role: u.role, avatar: u.avatar });
-      if (res.ok) {
-        const saved = await res.json();
-        u._serverId = saved.id;
+      // Firebase: user saved
         u._dbRow    = true;
         lsSaveUsers(getExtraUsers());
       }
@@ -9321,14 +9319,10 @@ async function saveUser() {
       // Save to server (PUT if has server ID, else POST as new)
       try {
         if (existing._serverId || existing._dbRow) {
-          /* Firebase: user update handled */
+          await fbSaveUser({ ...updated });
         } else {
-          // Built-in user edited — save as new server record to persist changes
-          /* Firebase: user sync */
-            const saved = await res.json();
-            AppUsers[idx]._serverId = saved.id;
-            AppUsers[idx]._dbRow    = true;
-          }
+          await fbSaveUser({ ...updated });
+          AppUsers[idx]._dbRow = true;
         }
       } catch { /* server error — still saved locally */ }
 
@@ -9345,10 +9339,8 @@ async function saveUser() {
 
       // Save to server
       try {
-        /* Firebase: user sync */
-          const saved = await res.json();
-          newUser._serverId = saved.id;
-          newUser._dbRow    = true;
+        await fbSaveUser({ ...newUser });
+          newUser._dbRow = true;
           // Update localStorage again with server ID
           lsSaveUsers(getExtraUsers());
         } else {
@@ -10739,8 +10731,6 @@ async function deSaveSettings(settingsObj) {
         /* Firebase: design_settings not implemented */
       } else {
         const res = /* Firebase: design_settings not implemented */
-        const created = await res.json();
-        if (created.id) DE_recordIds[key] = created.id;
       }
     } catch(e) { /* offline */ }
   });
