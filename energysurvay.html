@@ -85,6 +85,8 @@ textarea{min-height:70px;resize:vertical;}
 .phead{display:none;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:2px solid var(--green);margin-bottom:16px;}
 .psig{display:none;margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:12px;color:var(--gray);}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -295,6 +297,7 @@ textarea{min-height:70px;resize:vertical;}
   <button class="bc" onclick="clearForm()">🗑 נקה</button>
   <button class="bp" onclick="exportPDF()">📋 ייצא PDF</button>
   <button class="bw" id="wbtn" onclick="exportWord()">📄 ייצא Word</button>
+  <button class="bs" id="sbtn" onclick="saveControl()" style="background:#1a73e8;color:white;border:none;border-radius:9px;padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Heebo',sans-serif;">💾 שמור בקרה</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -583,6 +586,133 @@ document.querySelectorAll('input,textarea,select').forEach(function(el) {
 // Set default date
 document.getElementById('survey_date').value = new Date().toISOString().split('T')[0];
 updateProg();
+
+// Firebase config
+const _fbConfig = {
+  apiKey: "AIzaSyDSz5ZPZIwU4-zJBAMQUGZz-4Cw9bt44SI",
+  authDomain: "energyredesign.firebaseapp.com",
+  projectId: "energyredesign",
+  storageBucket: "energyredesign.firebasestorage.app",
+  messagingSenderId: "28317673306",
+  appId: "1:28317673306:web:5d04e63fceefa3fb40f563"
+};
+if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
+var _fbDb = firebase.firestore();
+
+async function saveControl() {
+  var btn = document.getElementById('sbtn');
+  var origText = btn.textContent;
+  btn.textContent = '⏳ שומר...';
+  btn.disabled = true;
+  try {
+    var data = {
+      factory_name: v('factory_name'),
+      company_name: v('company_name'),
+      contact_name: v('contact_name'),
+      contact_role: v('contact_role'),
+      contact_phone: v('contact_phone'),
+      contact_email: v('contact_email'),
+      location: v('location'),
+      employees: v('employees'),
+      facility_desc: v('facility_desc'),
+      area_total: v('area_total'),
+      area_roofed: v('area_roofed'),
+      area_ac: v('area_ac'),
+      factory_hours: v('factory_hours'),
+      office_hours: v('office_hours'),
+      extra_notes: v('extra_notes'),
+      survey_date: v('survey_date') || document.getElementById('survey_date')?.value || '',
+      consumers: getConsumers(),
+      cur_energy: energyLines('cur'),
+      prev_energy: energyLines('prev'),
+      saved_at: new Date().toISOString(),
+      saved_by: 'user'
+    };
+    if (!data.factory_name) { showToast('נא להזין שם מפעל לפני השמירה', 'err'); btn.textContent = origText; btn.disabled = false; return; }
+    await _fbDb.collection('energy_controls').add(data);
+    showToast('הבקרה נשמרה בהצלחה ✓', 'ok');
+  } catch(e) {
+    showToast('שגיאה בשמירה: ' + e.message, 'err');
+  }
+  btn.textContent = origText;
+  btn.disabled = false;
+}
+
+
+// ── טעינת בקרה קיימת לעריכה ──
+(async function() {
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get('edit');
+  if (!editId) return;
+  try {
+    const doc = await _fbDb.collection('energy_controls').doc(editId).get();
+    if (!doc.exists) return;
+    const d = doc.data();
+    // מלא שדות
+    const set = (id, val) => { const el = document.getElementById(id); if (el && val !== undefined) el.value = val || ''; };
+    set('factory_name', d.factory_name); set('company_name', d.company_name);
+    set('company_id', d.company_id); set('contact_name', d.contact_name);
+    set('contact_role', d.contact_role); set('contact_phone', d.contact_phone);
+    set('contact_email', d.contact_email); set('location', d.location);
+    set('employees', d.employees); set('facility_desc', d.facility_desc);
+    set('area_total', d.area_total); set('area_roofed', d.area_roofed);
+    set('area_ac', d.area_ac); set('factory_hours', d.factory_hours);
+    set('office_hours', d.office_hours); set('extra_notes', d.extra_notes);
+    // צרכנים
+    if (d.consumers && d.consumers.length > 0) {
+      d.consumers.forEach(function(c) {
+        cardN++;
+        var cid = 'card_' + cardN;
+        rowNums[cid] = 0;
+        var div = document.createElement('div');
+        div.className = 'cc'; div.id = cid;
+        var btnDel = 'document.getElementById(\'' + cid + '\').remove()';
+        var btnAdd = 'addRow(\'' + cid + '\')';
+        div.innerHTML = '<div class="cch"><div class="ctag">' + (c.name||'') + '</div><button class="bdel" onclick="' + btnDel + '">✕ הסר</button></div><div id="rows_'+cid+'"></div><button class="brow" onclick="' + btnAdd + '">+ הוסף שורה נוספת</button>';
+        document.getElementById('clist').appendChild(div);
+        (c.rows||[]).forEach(function(r) {
+          rowNums[cid] = (rowNums[cid]||0) + 1;
+          var rid = cid + '_r' + rowNums[cid];
+          var container = document.getElementById('rows_'+cid);
+          var rowDiv = document.createElement('div');
+          rowDiv.innerHTML = innerRow(cid, rowNums[cid]);
+          var rowEl = rowDiv.firstElementChild;
+          container.appendChild(rowEl);
+          var inputs = rowEl.querySelectorAll('input');
+          if (inputs[0]) inputs[0].value = r.desc||'';
+          if (inputs[1]) inputs[1].value = r.qty||'';
+          if (inputs[2]) inputs[2].value = r.kw||'';
+        });
+      });
+    }
+    // עדכן כפתור שמירה לעדכון
+    document.getElementById('sbtn').textContent = '💾 עדכן בקרה';
+    document.getElementById('sbtn').onclick = async function() {
+      document.getElementById('sbtn').textContent = '⏳ מעדכן...';
+      document.getElementById('sbtn').disabled = true;
+      try {
+        var data = {
+          factory_name: v('factory_name'), company_name: v('company_name'),
+          contact_name: v('contact_name'), contact_role: v('contact_role'),
+          contact_phone: v('contact_phone'), contact_email: v('contact_email'),
+          location: v('location'), employees: v('employees'),
+          facility_desc: v('facility_desc'), area_total: v('area_total'),
+          area_roofed: v('area_roofed'), area_ac: v('area_ac'),
+          factory_hours: v('factory_hours'), office_hours: v('office_hours'),
+          extra_notes: v('extra_notes'), consumers: getConsumers(),
+          cur_energy: energyLines('cur'), prev_energy: energyLines('prev'),
+          updated_at: new Date().toISOString()
+        };
+        await _fbDb.collection('energy_controls').doc(editId).update(data);
+        showToast('הבקרה עודכנה בהצלחה ✓', 'ok');
+      } catch(e) { showToast('שגיאה: ' + e.message, 'err'); }
+      document.getElementById('sbtn').textContent = '💾 עדכן בקרה';
+      document.getElementById('sbtn').disabled = false;
+    };
+    showToast('הבקרה נטענה לעריכה', 'ok');
+  } catch(e) { showToast('שגיאה בטעינה: ' + e.message, 'err'); }
+})();
+
 </script>
 </body>
 </html>

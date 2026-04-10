@@ -51,6 +51,8 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#66bb6a;box-sh
 .wa-btn{width:100%;padding:13px;background:#25d366;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Heebo',sans-serif;margin-top:8px;transition:background 0.15s}
 .wa-btn:hover{background:#128c4e}
 </style>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -382,6 +384,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#66bb6a;box-sh
 
 <button class="submit-btn" id="submit_btn" onclick="submitForm()">שלח דיווח ← (PDF + Excel יורדים אוטומטית)</button>
 <button class="wa-btn" onclick="sendWhatsapp()">📲 שלח לווטסאפ של דניאל</button>
+<button class="wa-btn" id="save-report-btn" onclick="saveReport()" style="background:#1a73e8;margin-top:8px;">💾 שמור דוח במערכת</button>
 <div class="status st-send" id="st_sending">⏳ מעבד ושולח... אנא המתן</div>
 <div class="status st-ok" id="st_success">✅ הדיווח נשלח בהצלחה! PDF ו-Excel הורדו למחשב שלך.</div>
 <div class="status st-err" id="st_error"></div>
@@ -853,6 +856,92 @@ function sendWhatsapp(){
   // Open directly to Daniel's number
   window.open('https://wa.me/972524847723?text=' + encoded, '_blank');
 }
+
+// Firebase config
+const _fbConfig = {
+  apiKey: "AIzaSyDSz5ZPZIwU4-zJBAMQUGZz-4Cw9bt44SI",
+  authDomain: "energyredesign.firebaseapp.com",
+  projectId: "energyredesign",
+  storageBucket: "energyredesign.firebasestorage.app",
+  messagingSenderId: "28317673306",
+  appId: "1:28317673306:web:5d04e63fceefa3fb40f563"
+};
+if (!firebase.apps.length) firebase.initializeApp(_fbConfig);
+var _fbDb = firebase.firestore();
+
+async function saveReport() {
+  var btn = document.getElementById('save-report-btn');
+  var origText = btn.textContent;
+  btn.textContent = '⏳ שומר...';
+  btn.disabled = true;
+  try {
+    var data = {};
+    FIELDS.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) data[id] = el.value;
+    });
+    data.factory_name = data.co_name || '';
+    data.company_name = data.co_name || '';
+    data.report_year = data.year || '';
+    data.location = '';
+    data.saved_at = new Date().toISOString();
+    data.saved_by = 'user';
+    if (!data.co_name) {
+      alert('נא להזין שם חברה לפני השמירה');
+      btn.textContent = origText;
+      btn.disabled = false;
+      return;
+    }
+    await _fbDb.collection('energy_reports').add(data);
+    alert('✅ הדוח נשמר בהצלחה!');
+  } catch(e) {
+    alert('שגיאה בשמירה: ' + e.message);
+  }
+  btn.textContent = origText;
+  btn.disabled = false;
+}
+
+
+// ── טעינת דוח קיים לעריכה ──
+(async function() {
+  const params = new URLSearchParams(window.location.search);
+  const editId = params.get('edit');
+  if (!editId) return;
+  try {
+    const doc = await _fbDb.collection('energy_reports').doc(editId).get();
+    if (!doc.exists) return;
+    const d = doc.data();
+    // מלא את כל השדות
+    FIELDS.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el && d[id] !== undefined) el.value = d[id] || '';
+    });
+    // חשב מחדש
+    if (typeof calcElec === 'function') calcElec();
+    if (typeof calcCars === 'function') calcCars();
+    if (typeof calcMuni === 'function') calcMuni();
+    // עדכן כפתור שמירה
+    var btn = document.getElementById('save-report-btn');
+    if (btn) {
+      btn.textContent = '💾 עדכן דוח';
+      btn.onclick = async function() {
+        btn.textContent = '⏳ מעדכן...'; btn.disabled = true;
+        try {
+          var data = {};
+          FIELDS.forEach(function(id) { var el = document.getElementById(id); if (el) data[id] = el.value; });
+          data.factory_name = data.co_name || '';
+          data.report_year = data.year || '';
+          data.updated_at = new Date().toISOString();
+          await _fbDb.collection('energy_reports').doc(editId).update(data);
+          alert('✅ הדוח עודכן בהצלחה!');
+        } catch(e) { alert('שגיאה: ' + e.message); }
+        btn.textContent = '💾 עדכן דוח'; btn.disabled = false;
+      };
+    }
+    alert('✅ הדוח נטען לעריכה');
+  } catch(e) { alert('שגיאה בטעינה: ' + e.message); }
+})();
+
 </script>
 </body>
 </html>

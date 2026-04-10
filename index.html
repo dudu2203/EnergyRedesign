@@ -1737,6 +1737,12 @@ input[type="color"].de-color-input {
       <a href="javascript:void(0)" class="nav-item active" data-view="surveys">
         <i class="fas fa-list-alt"></i><span>רשימת סקרים</span>
       </a>
+      <a href="javascript:void(0)" class="nav-item" data-view="controls-list">
+        <i class="fas fa-chart-line"></i><span>בקרות אנרגיה</span>
+      </a>
+      <a href="javascript:void(0)" class="nav-item" data-view="reports-list">
+        <i class="fas fa-file-alt"></i><span>דוחות שנתיים</span>
+      </a>
       <a href="javascript:void(0)" class="nav-item" data-view="new-survey">
         <i class="fas fa-plus-circle"></i><span>סקר חדש</span>
       </a>
@@ -1837,6 +1843,41 @@ input[type="color"].de-color-input {
       </div>
 
       <!-- ===== SURVEY FORM ===== -->
+      
+      <!-- ══ רשימת בקרות אנרגיה ══ -->
+      <div id="view-controls-list" class="view">
+        <div class="view-header">
+          <h2>בקרות אנרגיה</h2>
+          <button class="btn btn-primary" onclick="openControlPanel()">
+            <i class="fas fa-plus"></i> בקרה חדשה
+          </button>
+        </div>
+        <div id="controls-list-container">
+          <div style="text-align:center;padding:60px 20px;color:var(--text-hint);">
+            <i class="fas fa-chart-line" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i>
+            <div style="font-size:16px;font-weight:600;margin-bottom:8px;">אין בקרות שמורות</div>
+            <div style="font-size:13px;">לחץ "בקרה חדשה" כדי להתחיל</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ רשימת דוחות שנתיים ══ -->
+      <div id="view-reports-list" class="view">
+        <div class="view-header">
+          <h2>דוחות אנרגיה שנתיים</h2>
+          <button class="btn btn-primary" onclick="openAnnualReport()">
+            <i class="fas fa-plus"></i> דוח חדש
+          </button>
+        </div>
+        <div id="reports-list-container">
+          <div style="text-align:center;padding:60px 20px;color:var(--text-hint);">
+            <i class="fas fa-file-alt" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i>
+            <div style="font-size:16px;font-weight:600;margin-bottom:8px;">אין דוחות שמורים</div>
+            <div style="font-size:13px;">לחץ "דוח חדש" כדי להתחיל</div>
+          </div>
+        </div>
+      </div>
+
       <div id="view-survey-form" class="view" style="display:none;">
         <div class="view-header">
           <button class="btn btn-ghost" id="btn-back-to-list">
@@ -6051,6 +6092,8 @@ function bindBottomNav() {
       if (view === 'new-survey') openNewSurvey();
       else if (view === 'surveys') navigateTo('surveys');
       else if (view === 'admin-users') openAdminUsers();
+      else if (view === 'controls-list') { navigateTo('controls-list'); loadControlsList(); }
+      else if (view === 'reports-list') { navigateTo('reports-list'); loadReportsList(); }
     });
   });
 }
@@ -6083,7 +6126,7 @@ function bindDropZone(dropId, inputId, target) {
   });
 }
 
-const VIEWS = ['surveys', 'survey-form', 'survey-detail', 'admin-users', 'design-editor'];
+const VIEWS = ['surveys', 'survey-form', 'survey-detail', 'admin-users', 'design-editor', 'controls-list', 'reports-list'];
 
 function showView(name) {
   VIEWS.forEach(v => { const el = document.getElementById('view-' + v); if (el) el.style.display = 'none'; });
@@ -6216,6 +6259,8 @@ function bindSidebarToggle() {
       if (view === 'new-survey') openNewSurvey();
       else if (view === 'surveys') navigateTo('surveys');
       else if (view === 'admin-users') openAdminUsers();
+      else if (view === 'controls-list') { navigateTo('controls-list'); loadControlsList(); }
+      else if (view === 'reports-list') { navigateTo('reports-list'); loadReportsList(); }
       else if (view === 'design-editor') openDesignEditor();
     });
   });
@@ -6226,7 +6271,7 @@ function navigateTo(view, title) {
   const homeEl = document.getElementById('screen-home');
   if (homeEl && homeEl.style.display !== 'none') hideHomeScreen();
 
-  const titles = { surveys: 'רשימת סקרים', 'survey-form': 'סקר חדש', 'survey-detail': 'פרטי סקר', 'admin-users': 'ניהול משתמשים' };
+  const titles = { surveys: 'רשימת סקרים', 'survey-form': 'סקר חדש', 'survey-detail': 'פרטי סקר', 'admin-users': 'ניהול משתמשים', 'controls-list': 'בקרות אנרגיה', 'reports-list': 'דוחות שנתיים' };
   setTopbarTitle(title || titles[view] || '');
   showView(view);
   document.querySelectorAll('.nav-item').forEach(n => {
@@ -11294,6 +11339,247 @@ function initDesignEditor() {
 document.addEventListener('DOMContentLoaded', () => {
   deLoadSettings();
 });
+
+// ══════════════════════════════════════════════
+// בקרות אנרגיה ודוחות — שמירה וטעינה מ-Firebase
+// ══════════════════════════════════════════════
+
+async function loadControlsList() {
+  const container = document.getElementById('controls-list-container');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-hint);"><i class="fas fa-spinner fa-spin" style="font-size:28px;"></i><div style="margin-top:12px;">טוען...</div></div>';
+  try {
+    const snapshot = await window.fbDb.collection('energy_controls')
+      .orderBy('saved_at', 'desc').limit(100).get();
+    if (snapshot.empty) {
+      container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-hint);"><i class="fas fa-chart-line" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i><div style="font-size:16px;font-weight:600;margin-bottom:8px;">אין בקרות שמורות</div><div style="font-size:13px;">לחץ "בקרה חדשה" כדי להתחיל</div></div>';
+      return;
+    }
+    container.innerHTML = '<div class="surveys-container">' + snapshot.docs.map(doc => {
+      const d = doc.data();
+      const date = d.saved_at ? new Date(d.saved_at).toLocaleDateString('he-IL') : '—';
+      return `<div class="survey-card">
+        <div class="card-top">
+          <div class="card-icon industry"><i class="fas fa-chart-line"></i></div>
+          <span class="card-status ready">בקרה</span>
+        </div>
+        <div class="card-name">${escHtml(d.factory_name || '—')}</div>
+        <div class="card-meta">
+          <span><i class="fas fa-building"></i> ${escHtml(d.company_name || '—')}</span>
+          <span><i class="fas fa-user"></i> ${escHtml(d.contact_name || '—')}</span>
+          <span><i class="fas fa-map-marker-alt"></i> ${escHtml(d.location || '—')}</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date"><i class="fas fa-save"></i> נשמר: ${date}</span>
+          <div class="card-actions">
+            <button class="btn btn-outline btn-sm" title="ערוך" onclick="openControlForEdit('${doc.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-outline btn-sm" title="ייצא PDF" onclick="exportControlPDF('${doc.id}')"><i class="fas fa-file-pdf" style="color:#dc2626;"></i></button>
+            <button class="btn btn-outline btn-sm" title="ייצא Word" onclick="exportControlWord('${doc.id}')"><i class="fas fa-file-word" style="color:#1a73e8;"></i></button>
+            <button class="btn btn-danger btn-sm" title="מחק" onclick="deleteControl('${doc.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger);">שגיאה בטעינת הבקרות: ' + e.message + '</div>';
+  }
+}
+
+function openControlForEdit(id) {
+  // Open energysurvay.html with the doc id as param
+  window.open('energysurvay.html?edit=' + id, '_blank');
+}
+
+async function exportControlPDF(id) {
+  try {
+    const doc = await window.fbDb.collection('energy_controls').doc(id).get();
+    if (!doc.exists) { toast('לא נמצאה הבקרה', 'error'); return; }
+    const d = doc.data();
+    _printControlData(d);
+  } catch(e) { toast('שגיאה: ' + e.message, 'error'); }
+}
+
+async function exportControlWord(id) {
+  try {
+    const doc = await window.fbDb.collection('energy_controls').doc(id).get();
+    if (!doc.exists) { toast('לא נמצאה הבקרה', 'error'); return; }
+    const d = doc.data();
+    _exportControlWordDoc(d);
+  } catch(e) { toast('שגיאה: ' + e.message, 'error'); }
+}
+
+function _printControlData(d) {
+  const w = window.open('', '_blank');
+  const date = d.saved_at ? new Date(d.saved_at).toLocaleDateString('he-IL') : '—';
+  const consHTML = (d.consumers || []).map(c =>
+    `<h4 style="margin:10px 0 4px;">${c.name || ''}</h4>
+     <table style="width:100%;border-collapse:collapse;font-size:11pt;">
+       <tr style="background:#e8f5ec;"><th style="padding:4px 8px;border:1px solid #c8ddd0;">פרט</th><th style="padding:4px 8px;border:1px solid #c8ddd0;">כמות</th><th style="padding:4px 8px;border:1px solid #c8ddd0;">kW</th></tr>
+       ${(c.rows||[]).map(r=>`<tr><td style="padding:4px 8px;border:1px solid #ddd;">${r.desc||''}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">${r.qty||''}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">${r.kw||''}</td></tr>`).join('')}
+     </table>`
+  ).join('');
+  const row = (k,v) => `<tr><td style="background:#e8f5ec;font-weight:bold;padding:5px 10px;border:1px solid #c8ddd0;width:35%;">${k}</td><td style="padding:5px 10px;border:1px solid #c8ddd0;">${v||'—'}</td></tr>`;
+  w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>בקרת אנרגיה</title>
+    <style>body{font-family:Arial,sans-serif;direction:rtl;margin:2cm;font-size:11pt;}table{width:100%;border-collapse:collapse;}h3{color:#2d7d46;border-bottom:2px solid #2d7d46;padding-bottom:4px;margin:20px 0 10px;}</style>
+    </head><body>
+    <div style="text-align:center;background:#1a2e22;color:white;padding:20px;margin-bottom:20px;">
+      <h1 style="margin:0;font-size:20pt;">⚡ בקרת אנרגיה</h1>
+      <div style="font-size:14pt;margin-top:6px;">${escHtml(d.factory_name||'—')}</div>
+      <div style="font-size:10pt;margin-top:4px;opacity:.8;">תאריך שמירה: ${date}</div>
+    </div>
+    <h3>פרטי החברה</h3>
+    <table>${row('שם מפעל',d.factory_name)}${row('שם חברה',d.company_name)}${row('אחראי אנרגיה',d.contact_name)}${row('תפקיד',d.contact_role)}${row('נייד',d.contact_phone)}${row('אי-מייל',d.contact_email)}${row('מיקום',d.location)}${row('עובדים',d.employees)}</table>
+    <h3>מבנה המתקן</h3>
+    <table>${row('תיאור',d.facility_desc)}${row('שטח כולל',d.area_total?' מ"ר'+d.area_total:'')}${row('שטח מקורה',d.area_roofed?d.area_roofed+' מ"ר':'')}${row('שטח ממוזג',d.area_ac?d.area_ac+' מ"ר':'')}${row('שעות מפעל',d.factory_hours)}${row('שעות משרד',d.office_hours)}</table>
+    ${consHTML ? '<h3>צרכני אנרגיה</h3>' + consHTML : ''}
+    ${d.extra_notes ? '<h3>הערות</h3><p>'+escHtml(d.extra_notes)+'</p>' : ''}
+    <div style="margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:10pt;color:#666;">
+      חתימה: ___________________ &nbsp;&nbsp; תאריך: ___________________
+    </div>
+    </body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 500);
+}
+
+function _exportControlWordDoc(d) {
+  const html = _printControlData.toString(); // reuse HTML builder
+  // Build simple word doc
+  const date = d.saved_at ? new Date(d.saved_at).toLocaleDateString('he-IL') : '—';
+  const row = (k,v) => `<tr><td style="background:#e8f5ec;font-weight:bold;padding:5px 10px;border:1px solid #c8ddd0;width:35%;">${k}</td><td style="padding:5px 10px;border:1px solid #c8ddd0;">${v||'—'}</td></tr>`;
+  const consHTML = (d.consumers||[]).map(c =>
+    `<h3>${escHtml(c.name||'')}</h3>
+     <table style="border-collapse:collapse;font-size:11pt;width:100%;">
+       <tr style="background:#e8f5ec;"><th style="padding:4px 8px;border:1px solid #c8ddd0;">פרט</th><th style="padding:4px 8px;border:1px solid #c8ddd0;">כמות</th><th style="padding:4px 8px;border:1px solid #c8ddd0;">kW</th></tr>
+       ${(c.rows||[]).map(r=>`<tr><td style="padding:4px 8px;border:1px solid #ddd;">${r.desc||''}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">${r.qty||''}</td><td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">${r.kw||''}</td></tr>`).join('')}
+     </table>`
+  ).join('');
+  const wordHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+    <head><meta charset="utf-8"><title>בקרת אנרגיה</title>
+    <style>body{font-family:Arial,sans-serif;direction:rtl;margin:2cm;}table{border-collapse:collapse;width:100%;}h3{color:#2d7d46;border-bottom:2px solid #2d7d46;padding-bottom:4px;margin:20px 0 10px;}@page{margin:2cm;}</style>
+    </head><body dir="rtl">
+    <div style="text-align:center;background:#1a2e22;color:white;padding:20px;margin-bottom:20px;">
+      <h1 style="margin:0;color:white;">⚡ בקרת אנרגיה — ${escHtml(d.factory_name||'—')}</h1>
+      <div style="font-size:12pt;margin-top:6px;opacity:.85;">תאריך שמירה: ${date}</div>
+    </div>
+    <h3>פרטי החברה</h3>
+    <table>${row('שם מפעל',d.factory_name)}${row('שם חברה',d.company_name)}${row('אחראי אנרגיה',d.contact_name)}${row('תפקיד',d.contact_role)}${row('נייד',d.contact_phone)}${row('אי-מייל',d.contact_email)}${row('מיקום',d.location)}${row('עובדים',d.employees)}</table>
+    <h3>מבנה המתקן</h3>
+    <table>${row('תיאור',d.facility_desc)}${row('שטח כולל',d.area_total?d.area_total+' מ"ר':'')}${row('שטח מקורה',d.area_roofed?d.area_roofed+' מ"ר':'')}${row('שטח ממוזג',d.area_ac?d.area_ac+' מ"ר':'')}${row('שעות מפעל',d.factory_hours)}${row('שעות משרד',d.office_hours)}</table>
+    ${consHTML ? '<h3>צרכני אנרגיה</h3>' + consHTML : ''}
+    ${d.extra_notes ? '<h3>הערות</h3><p>'+escHtml(d.extra_notes)+'</p>' : ''}
+    <div style="margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:10pt;color:#666;">
+      חתימה: ___________________ &nbsp;&nbsp; תאריך: ___________________
+    </div>
+    </body></html>`;
+  const blob = new Blob(['﻿' + wordHtml], {type:'application/msword;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'בקרת_אנרגיה_' + (d.factory_name||'ללא_שם').replace(/\s+/g,'_') + '.doc';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+  toast('קובץ Word הורד ✓', 'success');
+}
+
+async function deleteControl(id) {
+  showConfirm('מחיקת בקרה', 'האם אתה בטוח שברצונך למחוק את הבקרה?', async () => {
+    try {
+      await window.fbDb.collection('energy_controls').doc(id).delete();
+      toast('הבקרה נמחקה', 'success');
+      loadControlsList();
+    } catch(e) { toast('שגיאה במחיקה', 'error'); }
+  });
+}
+
+async function loadReportsList() {
+  const container = document.getElementById('reports-list-container');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-hint);"><i class="fas fa-spinner fa-spin" style="font-size:28px;"></i><div style="margin-top:12px;">טוען...</div></div>';
+  try {
+    const snapshot = await window.fbDb.collection('energy_reports')
+      .orderBy('saved_at', 'desc').limit(100).get();
+    if (snapshot.empty) {
+      container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-hint);"><i class="fas fa-file-alt" style="font-size:48px;margin-bottom:16px;display:block;opacity:0.3;"></i><div style="font-size:16px;font-weight:600;margin-bottom:8px;">אין דוחות שמורים</div><div style="font-size:13px;">לחץ "דוח חדש" כדי להתחיל</div></div>';
+      return;
+    }
+    container.innerHTML = '<div class="surveys-container">' + snapshot.docs.map(doc => {
+      const d = doc.data();
+      const date = d.saved_at ? new Date(d.saved_at).toLocaleDateString('he-IL') : '—';
+      const coName = d.co_name || d.factory_name || d.company_name || '—';
+      const year = d.year || d.report_year || '—';
+      return `<div class="survey-card">
+        <div class="card-top">
+          <div class="card-icon office"><i class="fas fa-file-alt"></i></div>
+          <span class="card-status submitted">דוח שנתי</span>
+        </div>
+        <div class="card-name">${escHtml(coName)}</div>
+        <div class="card-meta">
+          <span><i class="fas fa-calendar-alt"></i> שנה: ${escHtml(year)}</span>
+          <span><i class="fas fa-user"></i> ${escHtml(d.contact || '—')}</span>
+          <span><i class="fas fa-industry"></i> ${escHtml(d.sector || '—')}</span>
+        </div>
+        <div class="card-footer">
+          <span class="card-date"><i class="fas fa-save"></i> נשמר: ${date}</span>
+          <div class="card-actions">
+            <button class="btn btn-outline btn-sm" title="ערוך" onclick="openReportForEdit('${doc.id}')"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-outline btn-sm" title="ייצא PDF" onclick="exportReportPDF('${doc.id}')"><i class="fas fa-file-pdf" style="color:#dc2626;"></i></button>
+            <button class="btn btn-danger btn-sm" title="מחק" onclick="deleteReport('${doc.id}')"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--danger);">שגיאה בטעינת הדוחות: ' + e.message + '</div>';
+  }
+}
+
+function openReportForEdit(id) {
+  window.open('energyreport.html?edit=' + id, '_blank');
+}
+
+async function exportReportPDF(id) {
+  try {
+    const doc = await window.fbDb.collection('energy_reports').doc(id).get();
+    if (!doc.exists) { toast('לא נמצא הדוח', 'error'); return; }
+    const d = doc.data();
+    const w = window.open('', '_blank');
+    const date = d.saved_at ? new Date(d.saved_at).toLocaleDateString('he-IL') : '—';
+    const row = (k,v) => v ? `<tr><td style="background:#e8f0fe;font-weight:bold;padding:5px 10px;border:1px solid #c5cae9;width:35%;">${k}</td><td style="padding:5px 10px;border:1px solid #c5cae9;">${v}</td></tr>` : '';
+    w.document.write(`<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><title>דוח אנרגיה שנתי</title>
+      <style>body{font-family:Arial,sans-serif;direction:rtl;margin:2cm;font-size:11pt;}table{width:100%;border-collapse:collapse;margin-bottom:14px;}h3{color:#1a73e8;border-bottom:2px solid #1a73e8;padding-bottom:4px;margin:20px 0 10px;}@page{margin:2cm;}</style>
+      </head><body>
+      <div style="text-align:center;background:#1a1f36;color:white;padding:20px;margin-bottom:20px;">
+        <h1 style="margin:0;color:white;font-size:20pt;">⚡ דוח אנרגיה שנתי</h1>
+        <div style="font-size:14pt;margin-top:6px;">${escHtml(d.co_name||d.factory_name||'—')}</div>
+        <div style="font-size:10pt;margin-top:4px;opacity:.8;">שנה: ${escHtml(d.year||'—')} | תאריך הפקה: ${date}</div>
+      </div>
+      <h3>פרטי החברה</h3>
+      <table>${row('שם חברה',d.co_name)}${row('איש קשר',d.contact)}${row('ת.ז / ח.פ',d.teudat)}${row('יועץ אנרגיה',d.consulting)}${row('טלפון',d.phone)}${row('אי-מייל',d.email)}${row('שנת דיווח',d.year)}${row('ענף',d.sector)}${row('סוג מבנה',d.building_type)}</table>
+      <h3>נתוני חשמל</h3>
+      <table>${row('צריכה פסגה (kWh)',d.elec_peak)}${row('צריכה שפל (kWh)',d.elec_off)}${row('צריכה שטוחה (kWh)',d.elec_flat)}${row('ייצור ירוק (kWh)',d.green_kwh)}${row('ספקים',d.suppliers)}</table>
+      ${d.notes ? '<h3>הערות</h3><p>'+escHtml(d.notes)+'</p>' : ''}
+      <div style="margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:10pt;color:#666;">
+        חתימה: ___________________ &nbsp;&nbsp; תאריך: ___________________
+      </div>
+      </body></html>`);
+    w.document.close();
+    w.focus();
+    setTimeout(() => w.print(), 500);
+  } catch(e) { toast('שגיאה: ' + e.message, 'error'); }
+}
+
+async function deleteReport(id) {
+  showConfirm('מחיקת דוח', 'האם אתה בטוח שברצונך למחוק את הדוח?', async () => {
+    try {
+      await window.fbDb.collection('energy_reports').doc(id).delete();
+      toast('הדוח נמחק', 'success');
+      loadReportsList();
+    } catch(e) { toast('שגיאה במחיקה', 'error'); }
+  });
+}
+
 </script>
 </body>
 </html>
