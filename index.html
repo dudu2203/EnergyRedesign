@@ -9338,12 +9338,8 @@ async function saveUser() {
       // Save to server
       try {
         await fbSaveUser({ ...newUser });
-          newUser._dbRow = true;
-          // Update localStorage again with server ID
-          lsSaveUsers(getExtraUsers());
-        } else {
-          console.warn('Server save failed, status:', res.status);
-        }
+        newUser._dbRow = true;
+        lsSaveUsers(getExtraUsers());
       } catch (err) {
         console.warn('Server save error:', err);
         /* server error — user already saved locally, will sync later */
