@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>טופס דיווח אנרגטי — NRG Redesign</title>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&display=swap');
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Heebo',sans-serif;direction:rtl;background:#f4f7f0;color:#1a1a1a;font-size:14px}
+.wrap{max-width:860px;margin:0 auto;padding:1.5rem 1rem 4rem}
+.header{background:#fff;border:1px solid #d4e6b5;border-radius:14px;padding:1rem 1.75rem;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between}
+.logo-wrap img{height:54px;width:auto;display:block}
+.date-badge{background:#eaf3de;color:#27500a;border:1px solid #97c459;border-radius:20px;padding:5px 16px;font-size:12px;font-weight:500}
+.card{background:#fff;border:1px solid #ddeeb0;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.card-title{font-size:13px;font-weight:600;color:#27500a;margin-bottom:1rem;padding-bottom:8px;border-bottom:1px solid #d4e6b5;display:flex;align-items:center;gap:8px}
+.accent{display:inline-block;width:3px;height:14px;background:#639922;border-radius:2px;flex-shrink:0}
+.tabs{display:flex;gap:8px;margin-bottom:1rem}
+.tab{flex:1;padding:10px 0;border-radius:10px;border:1px solid #ccc;font-size:13px;font-weight:500;cursor:pointer;background:#f4f7f0;color:#666;font-family:'Heebo',sans-serif;text-align:center;transition:all 0.15s}
+.tab.active{background:#eaf3de;color:#27500a;border-color:#97c459}
+.tab:hover:not(.active){background:#f0f5e8}
+.panel{display:none}.panel.active{display:block}
+.row{display:grid;gap:10px;margin-bottom:10px}
+.g2{grid-template-columns:1fr 1fr}
+.g3{grid-template-columns:1fr 1fr 1fr}
+.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+@media(max-width:600px){.g2,.g3,.g4{grid-template-columns:1fr}}
+label{font-size:12px;color:#4a6320;display:block;margin-bottom:3px;font-weight:500}
+.req{color:#c62828}
+input,select,textarea{width:100%;font-size:13px;padding:8px 11px;border:1px solid #ccdfa0;border-radius:8px;background:#fff;color:#1a1a1a;font-family:'Heebo',sans-serif;direction:rtl;transition:border 0.15s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#66bb6a;box-shadow:0 0 0 3px rgba(76,175,80,0.1)}
+.hint{font-size:11px;color:#888;margin-top:3px}
+.fuel-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+@media(max-width:600px){.fuel-grid{grid-template-columns:1fr 1fr}}
+.fuel-card{background:#f8faf2;border:1px solid #d4e6b5;border-radius:8px;padding:10px}
+.fuel-card label{color:#3b6d11;margin-bottom:5px}
+.totals-bar{background:#f1f8e9;border:1px solid #c0dd97;border-radius:8px;padding:10px 16px;display:flex;gap:2rem;flex-wrap:wrap;margin-top:10px}
+.tot label{font-size:11px;color:#3b6d11;font-weight:400}
+.tot span{font-size:18px;font-weight:600;color:#27500a;display:block}
+.section-sub{font-size:12px;font-weight:600;color:#3b6d11;margin:12px 0 8px;padding-right:6px;border-right:2px solid #97c459}
+.submit-btn{width:100%;padding:14px;background:#639922;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Heebo',sans-serif;margin-top:0.75rem;transition:background 0.15s}
+.submit-btn:hover{background:#3b6d11}
+.submit-btn:disabled{background:#aaa;cursor:not-allowed}
+.status{border-radius:10px;padding:14px 18px;font-size:13px;font-weight:500;display:none;margin-top:12px;text-align:center}
+.st-send{background:#e3f2fd;border:1px solid #90caf9;color:#0c447c}
+.st-ok{background:#eaf3de;border:1px solid #97c459;color:#27500a;font-size:14px}
+.st-err{background:#ffebee;border:1px solid #ef9a9a;color:#b71c1c}
+.wa-btn{width:100%;padding:13px;background:#25d366;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Heebo',sans-serif;margin-top:8px;transition:background 0.15s}
+.wa-btn:hover{background:#128c4e}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="header">
+  <div class="logo-wrap"><img src="data:image/jpeg;base64,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" alt="NRG Redesign"></div>
+  <div style="text-align:center">
+    <div class="date-badge" id="today_date">טוען...</div>
+    <div style="font-size:11px;color:#888;margin-top:5px">טופס דיווח אנרגטי</div>
+  </div>
+</div>
+
+<!-- פרטי לקוח -->
+<div class="card">
+  <div class="card-title"><span class="accent"></span>פרטי הלקוח</div>
+  <div class="row g2">
+    <div><label>שם החברה / הרשות <span class="req">*</span></label><input id="co_name" placeholder="שם מלא"></div>
+    <div><label>איש קשר / ממונה אנרגיה <span class="req">*</span></label><input id="contact" placeholder="שם מלא"></div>
+  </div>
+  <div class="row g2">
+    <div><label>מס' ת.ז. ממונה</label><input id="teudat" placeholder="0XXXXXXXX" dir="ltr"></div>
+    <div><label>שם חברת הייעוץ</label><input id="consulting" placeholder="אנרג'י רדיזיין"></div>
+  </div>
+  <div class="row g2">
+    <div><label>טלפון</label><input type="tel" id="phone" placeholder="05X-XXXXXXX"></div>
+    <div><label>דוא"ל</label><input type="email" id="email" placeholder="your@email.com" dir="ltr"></div>
+  </div>
+  <div class="row g3">
+    <div><label>שנת הדיווח</label>
+      <select id="year"><option value="2023">2023</option><option value="2024">2024</option><option value="2025" selected>2025</option><option value="2026">2026</option></select>
+    </div>
+    <div><label>מגזר פעילות</label>
+      <select id="sector">
+        <option>תעשייה/תחבורה</option>
+        <option>מסחרי/ציבורי</option>
+        <option>רשות מקומית</option>
+      </select>
+    </div>
+    <div><label>סוג מבנה</label><input id="building_type" placeholder="ייצור / מרפאה / ענפי ייצור..."></div>
+  </div>
+  <div class="row g3">
+    <div><label>שטח בנוי כולל (מ"ר)</label><input type="number" id="total_area" placeholder="0"></div>
+    <div><label>שטח ממוזג כולל (מ"ר)</label><input type="number" id="cooled_area" placeholder="0"></div>
+    <div><label>האם שטח בנוי גדול מהממוזג?</label>
+      <select id="area_diff"><option value="no">לא</option><option value="yes">כן</option></select>
+    </div>
+  </div>
+</div>
+
+<!-- טאבים -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('site',this)">🏭 אתר</button>
+  <button class="tab" onclick="switchTab('cars',this)">🚗 כלי רכב</button>
+  <button class="tab" onclick="switchTab('muni',this)">🏛 רשות מקומית</button>
+</div>
+
+<!-- ===== טאב אתר ===== -->
+<div id="panel-site" class="panel active">
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>צריכת חשמל שנתית (שאינה לכלי רכב)</div>
+    <div class="row g3">
+      <div><label>צריכה בפסגה (kWh)</label><input type="number" id="elec_peak" placeholder="0" oninput="calcElec()"></div>
+      <div><label>צריכה בשפל (kWh)</label><input type="number" id="elec_off" placeholder="0" oninput="calcElec()"></div>
+      <div><label>צריכה שאינה בתעו"ז (kWh)</label><input type="number" id="elec_flat" placeholder="0" oninput="calcElec()"></div>
+    </div>
+    <div class="row g2">
+      <div><label>ספקי חשמל עיקריים (עד 5)</label><input id="suppliers" placeholder="חברת החשמל, OPC, אסקו ישראל..."></div>
+      <div><label>צריכת חשמל ירוק (kWh)</label><input type="number" id="green_kwh" placeholder="0"></div>
+    </div>
+    <div class="totals-bar">
+      <div class="tot"><label>סה"כ חשמל</label><span id="elec_total">0</span> kWh</div>
+      <div class="tot"><label>פליטות CO₂eq</label><span id="elec_co2">0</span> טון</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>הפקת חשמל מאנרגיה מתחדשת</div>
+    <div class="section-sub">אנרגיית שמש (PV)</div>
+    <div class="row g3">
+      <div><label>הספק מותקן (kW)</label><input type="number" id="pv_kw" placeholder="0"></div>
+      <div><label>ייצור כולל (kWh)</label><input type="number" id="pv_kwh" placeholder="0"></div>
+      <div><label>נמכר לרשת (kWh)</label><input type="number" id="pv_sold" placeholder="0"></div>
+    </div>
+    <div class="section-sub">ביוגז / ביומסה</div>
+    <div class="row g3">
+      <div><label>הספק מותקן (kW)</label><input type="number" id="biogas_kw" placeholder="0"></div>
+      <div><label>ייצור כולל (kWh)</label><input type="number" id="biogas_kwh" placeholder="0"></div>
+      <div><label>נמכר לרשת (kWh)</label><input type="number" id="biogas_sold" placeholder="0"></div>
+    </div>
+    <div class="row g2">
+      <div><label>האם מפיק ממקורות אחרים?</label>
+        <select id="other_gen"><option value="no">לא</option><option value="yes">כן</option></select>
+      </div>
+      <div><label>האם קיימות מערכות אגירה?</label>
+        <select id="storage"><option value="no">אין</option><option value="yes">יש</option></select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>צריכת דלקים שנתית (שאינה לכלי רכב)</div>
+    <p class="hint" style="margin-bottom:10px">יש להזין 0 עבור דלקים שאינם בשימוש</p>
+    <div class="fuel-grid">
+      <div class="fuel-card"><label>מזוט קל (טון)</label><input type="number" id="f_mazot_k" value="0"></div>
+      <div class="fuel-card"><label>מזוט כבד (טון)</label><input type="number" id="f_mazot_kv" value="0"></div>
+      <div class="fuel-card"><label>דלק סילוני (טון)</label><input type="number" id="f_jet" value="0"></div>
+      <div class="fuel-card"><label>סולר (ליטר)</label><input type="number" id="f_solar_s" value="0"></div>
+      <div class="fuel-card"><label>קרוסין (ליטר)</label><input type="number" id="f_kerosene" value="0"></div>
+      <div class="fuel-card"><label>בנזין (ליטר)</label><input type="number" id="f_benzin" value="0"></div>
+      <div class="fuel-card"><label>גפ"מ (ק"ג)</label><input type="number" id="f_gpm" value="0"></div>
+      <div class="fuel-card"><label>גז טבעי (MMBTU)</label><input type="number" id="f_gas" value="0"></div>
+      <div class="fuel-card"><label>פחם (טון)</label><input type="number" id="f_coal" value="0"></div>
+      <div class="fuel-card"><label>נפטא (טון)</label><input type="number" id="f_nafta" value="0"></div>
+      <div class="fuel-card"><label>פטקוק (טון)</label><input type="number" id="f_petcoke" value="0"></div>
+      <div class="fuel-card"><label>ביטומן (טון)</label><input type="number" id="f_bitumen" value="0"></div>
+      <div class="fuel-card"><label>ביוגז — בוצה (מק"ת)</label><input type="number" id="f_biogas1" value="0"></div>
+      <div class="fuel-card"><label>ביוגז — מטמנות (מק"ת)</label><input type="number" id="f_biogas2" value="0"></div>
+      <div class="fuel-card"><label>אחר (טש"ן)</label><input type="number" id="f_other" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>רכישת מקורות אנרגיה נוספים</div>
+    <div class="row g2">
+      <div><label>שירותי הסעדה</label>
+        <select id="catering">
+          <option>אין שירותי הסעדה</option>
+          <option>שירותי קייטרינג</option>
+          <option>מטבח פנימי</option>
+        </select>
+      </div>
+      <div><label>שירותי כביסה</label>
+        <select id="laundry">
+          <option>אין שירותי כביסה</option>
+          <option>שירותי כביסה חוץ</option>
+          <option>כביסה פנימית</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>אנרגיה סגולית</div>
+    <div class="row g2">
+      <div><label>יחידת תפוקה</label>
+        <select id="output_unit">
+          <option>טון חומר גלם</option><option>מ"ק מים</option>
+          <option>יחידת מוצר</option><option>מ"ר</option>
+          <option>סך מחזור מכירות ש"ח</option><option>אחר</option>
+        </select>
+      </div>
+      <div><label>כמות שנתית</label><input type="number" id="output_qty" placeholder="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>פרויקטי התייעלות</div>
+    <div><label>האם היו פרויקטי התייעלות בשנת הדיווח?</label>
+      <select id="efficiency" onchange="toggleEff()"><option value="no">לא</option><option value="yes">כן</option></select>
+    </div>
+    <div id="eff_detail" style="display:none;margin-top:10px">
+      <label>פירוט הפרויקטים</label>
+      <textarea id="eff_text" rows="3" placeholder="תאר את הפרויקטים שבוצעו..."></textarea>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== טאב כלי רכב ===== -->
+<div id="panel-cars" class="panel">
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>כלי רכב מונעים בנזין</div>
+    <div class="row g3">
+      <div><label>מספר כלי רכב</label><input type="number" id="benz_count" value="0" oninput="calcCars()"></div>
+      <div><label>סך נסועה שנתית (ק"מ)</label><input type="number" id="benz_km" value="0" oninput="calcCars()"></div>
+      <div><label>סך צריכה שנתית (ליטר)</label><input type="number" id="benz_liter" value="0" oninput="calcCars()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>כלי רכב מונעים סולר</div>
+    <div class="row g3">
+      <div><label>מספר כלי רכב</label><input type="number" id="solar_count" value="0" oninput="calcCars()"></div>
+      <div><label>סך נסועה שנתית (ק"מ)</label><input type="number" id="solar_km" value="0" oninput="calcCars()"></div>
+      <div><label>סך צריכה שנתית (ליטר)</label><input type="number" id="solar_liter" value="0" oninput="calcCars()"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>כלי רכב מונעים גפ"מ</div>
+    <div class="row g3">
+      <div><label>מספר כלי רכב</label><input type="number" id="gpm_count" value="0"></div>
+      <div><label>סך נסועה (ק"מ)</label><input type="number" id="gpm_km" value="0"></div>
+      <div><label>סך צריכה (ק"ג)</label><input type="number" id="gpm_kg" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>כלי רכב מונעים גז טבעי</div>
+    <div class="row g3">
+      <div><label>מספר כלי רכב</label><input type="number" id="natgas_count" value="0"></div>
+      <div><label>סך נסועה (ק"מ)</label><input type="number" id="natgas_km" value="0"></div>
+      <div><label>סך צריכה (MMBTU)</label><input type="number" id="natgas_mmbtu" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>כלי רכב חשמליים (BEV)</div>
+    <div class="row g2">
+      <div><label>מספר כלי רכב (כולל ליסינג)</label><input type="number" id="ev_count" value="0"></div>
+      <div><label>סך נסועה שנתית (ק"מ)</label><input type="number" id="ev_km" value="0"></div>
+    </div>
+    <div class="row g2">
+      <div><label>עמדות טעינה של החברה</label>
+        <select id="chargers"><option value="no">אין</option><option value="yes">יש</option></select>
+      </div>
+      <div><label>צריכת חשמל בטעינה (kWh)</label><input type="number" id="ev_kwh" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>כלי צמ"ה (מלגזות וכלים כבדים)</div>
+    <div class="row g3">
+      <div><label>מספר מלגזות סה"כ</label><input type="number" id="fork_total" value="0"></div>
+      <div><label>מתוכן חשמליות</label><input type="number" id="fork_elec" value="0"></div>
+      <div><label>כלי צמ"ה אחרים</label><input type="number" id="hev_other" value="0"></div>
+    </div>
+    <div class="row g2">
+      <div><label>צריכת סולר שנתית (ליטר)</label><input type="number" id="hev_solar" value="0"></div>
+      <div><label>צריכת חשמל שנתית (קוט"ש)</label><input type="number" id="hev_kwh" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>סיכום כלי רכב</div>
+    <div class="totals-bar">
+      <div class="tot"><label>סה"כ רכבים</label><span id="cars_total">0</span></div>
+      <div class="tot"><label>סה"כ ק"מ</label><span id="km_total">0</span></div>
+      <div class="tot"><label>פליטות CO₂eq (טון)</label><span id="cars_co2">0</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== טאב רשות מקומית ===== -->
+<div id="panel-muni" class="panel">
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>צריכת חשמל שנתית כוללת</div>
+    <div class="row g2">
+      <div><label>צריכה כוללת (קוט"ש) <span class="req">*</span></label><input type="number" id="muni_total_kwh" placeholder="0" oninput="calcMuni()"></div>
+      <div><label>ספקי חשמל עיקריים (עד 3)</label><input id="muni_suppliers" placeholder="חברת החשמל..."></div>
+    </div>
+    <div class="totals-bar">
+      <div class="tot"><label>פליטות CO₂eq</label><span id="muni_co2">0</span> טון</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>תאורת חוץ</div>
+    <div class="row g2">
+      <div><label>צריכה שנתית (קוט"ש)</label><input type="number" id="muni_lighting_kwh" placeholder="0"></div>
+      <div><label>מספר פנסים ברשות</label><input type="number" id="muni_lamps" placeholder="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>מוסדות חינוך ברשות</div>
+    <div class="row g2">
+      <div><label>צריכה שנתית (קוט"ש)</label><input type="number" id="muni_edu_kwh" placeholder="0"></div>
+      <div><label>מספר תלמידים (כולל מוסדות בניהול עצמי)</label><input type="number" id="muni_students_total" placeholder="0"></div>
+    </div>
+    <div class="row g2">
+      <div><label>מספר תלמידים במוסדות בשטח הרשות</label><input type="number" id="muni_students_area" placeholder="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>כלי רכב בבעלות הרשות</div>
+    <div class="row g2">
+      <div><label>מספר רכבי דלק (כולל ליסינג)</label><input type="number" id="muni_fuel_cars" value="0"></div>
+      <div><label>מספר רכבים חשמליים BEV (כולל ליסינג)</label><input type="number" id="muni_ev_cars" value="0"></div>
+    </div>
+    <div class="section-sub">סה"כ צריכת אנרגיה נוספת</div>
+    <div class="row g3">
+      <div><label>סולר (ליטר)</label><input type="number" id="muni_diesel" value="0"></div>
+      <div><label>בנזין (ליטר)</label><input type="number" id="muni_gasoline" value="0"></div>
+      <div><label>גפ"מ (ק"ג)</label><input type="number" id="muni_lpg" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>עמדות טעינה לרכב חשמלי בבעלות הרשות</div>
+    <div class="row g2">
+      <div><label>עמדות לשימוש הציבור (לא חניונים פרטיים)</label><input type="number" id="muni_charge_public" value="0"></div>
+      <div><label>צריכת חשמל שנתית (קוט"ש)</label><input type="number" id="muni_charge_kwh" value="0"></div>
+    </div>
+    <div class="row g3">
+      <div><label>עמדות איטיות AC — מספר עמדות</label><input type="number" id="muni_ac_stations" value="0"></div>
+      <div><label>עמדות AC — מספר שקעים</label><input type="number" id="muni_ac_sockets" value="0"></div>
+      <div><label>עמדות מהירות DC — מספר</label><input type="number" id="muni_dc_stations" value="0"></div>
+    </div>
+    <div class="row g2">
+      <div><label>עמדות אולטרה מהירות (מעל 150kW)</label><input type="number" id="muni_ultra_stations" value="0"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="accent"></span>הפקת חשמל מאנרגיה מתחדשת — נכסי הרשות</div>
+    <div class="row g2">
+      <div><label>אנרגיית שמש — הספק מותקן (kWp)</label><input type="number" id="muni_pv_kw" value="0"></div>
+      <div><label>אנרגיית שמש — ייצור בפועל (kWh)</label><input type="number" id="muni_pv_kwh" value="0"></div>
+    </div>
+    <div class="row g2">
+      <div><label>אנרגיית רוח — הספק מותקן (kW)</label><input type="number" id="muni_wind_kw" value="0"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- הערות והצהרה -->
+<div class="card">
+  <div class="card-title"><span class="accent"></span>הצהרה והערות</div>
+  <div><label>הערות לדיווח</label><textarea id="notes" rows="3" placeholder="הערות נוספות, נימוק לחריגה וכד'..."></textarea></div>
+  <p class="hint" style="margin-top:8px">אני מצהיר/ה כי דיווח זה הינו אמת ואני מודע/ת לכך כי משרד האנרגיה רשאי לבדוק את הנתונים ולבקש אסמכתאות לנכונותם.</p>
+</div>
+
+<button class="submit-btn" id="submit_btn" onclick="submitForm()">שלח דיווח ← (PDF + Excel יורדים אוטומטית)</button>
+<button class="wa-btn" onclick="sendWhatsapp()">📲 שלח לווטסאפ של דניאל</button>
+<div class="status st-send" id="st_sending">⏳ מעבד ושולח... אנא המתן</div>
+<div class="status st-ok" id="st_success">✅ הדיווח נשלח בהצלחה! PDF ו-Excel הורדו למחשב שלך.</div>
+<div class="status st-err" id="st_error"></div>
+
+</div><!-- /wrap -->
+
+<script>
+emailjs.init({publicKey:'EHOyQP4XKMidJW4TL'});
+const SVC='service_1g5cg29', TPL='template_dmu6qb9';
+
+document.getElementById('today_date').textContent = new Date().toLocaleDateString('he-IL',{day:'2-digit',month:'2-digit',year:'numeric'});
+
+function v(id){return parseFloat(document.getElementById(id)?.value)||0}
+function g(id){return document.getElementById(id)?.value||''}
+
+function switchTab(tab,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+function toggleEff(){
+  document.getElementById('eff_detail').style.display=g('efficiency')==='yes'?'block':'none';
+}
+
+function calcElec(){
+  const tot=v('elec_peak')+v('elec_off')+v('elec_flat');
+  const co2=Math.round(tot*0.00047*10)/10;
+  document.getElementById('elec_total').textContent=tot.toLocaleString('he-IL');
+  document.getElementById('elec_co2').textContent=co2.toLocaleString('he-IL');
+}
+
+function calcMuni(){
+  const tot=v('muni_total_kwh');
+  const co2=Math.round(tot*0.00047*10)/10;
+  document.getElementById('muni_co2').textContent=co2.toLocaleString('he-IL');
+}
+
+function calcCars(){
+  const cars=v('benz_count')+v('solar_count')+v('gpm_count')+v('natgas_count')+v('ev_count');
+  const km=v('benz_km')+v('solar_km')+v('gpm_km')+v('natgas_km')+v('ev_km');
+  const co2=Math.round((v('benz_liter')*0.00231+v('solar_liter')*0.00268+v('gpm_kg')*0.00303)*10)/10;
+  document.getElementById('cars_total').textContent=cars;
+  document.getElementById('km_total').textContent=km.toLocaleString('he-IL');
+  document.getElementById('cars_co2').textContent=co2;
+}
+
+const FIELDS=['co_name','contact','teudat','consulting','phone','email','year','sector','building_type','total_area','cooled_area','area_diff','elec_peak','elec_off','elec_flat','green_kwh','suppliers','pv_kw','pv_kwh','pv_sold','biogas_kw','biogas_kwh','biogas_sold','other_gen','storage','f_mazot_k','f_mazot_kv','f_jet','f_solar_s','f_kerosene','f_benzin','f_gpm','f_gas','f_coal','f_nafta','f_petcoke','f_bitumen','f_biogas1','f_biogas2','f_other','catering','laundry','output_unit','output_qty','efficiency','eff_text','benz_count','benz_km','benz_liter','solar_count','solar_km','solar_liter','gpm_count','gpm_km','gpm_kg','natgas_count','natgas_km','natgas_mmbtu','ev_count','ev_km','ev_kwh','chargers','fork_total','fork_elec','hev_other','hev_solar','hev_kwh','muni_total_kwh','muni_suppliers','muni_lighting_kwh','muni_lamps','muni_edu_kwh','muni_students_total','muni_students_area','muni_fuel_cars','muni_ev_cars','muni_diesel','muni_gasoline','muni_lpg','muni_charge_public','muni_charge_kwh','muni_ac_stations','muni_ac_sockets','muni_dc_stations','muni_ultra_stations','muni_pv_kw','muni_pv_kwh','muni_wind_kw','notes'];
+
+function save(){try{const o={};FIELDS.forEach(id=>{const el=document.getElementById(id);if(el)o[id]=el.value});localStorage.setItem('nrg_v4',JSON.stringify(o));}catch(e){}}
+function load(){try{const s=localStorage.getItem('nrg_v4');if(!s)return;const o=JSON.parse(s);FIELDS.forEach(id=>{const el=document.getElementById(id);if(el&&o[id]!==undefined)el.value=o[id]});calcElec();calcCars();calcMuni();if(g('efficiency')==='yes')document.getElementById('eff_detail').style.display='block';}catch(e){}}
+document.querySelectorAll('input,select,textarea').forEach(el=>el.addEventListener('input',save));
+window.addEventListener('load',load);
+
+function D(){
+  return {
+    company:g('co_name'),contact:g('contact'),teudat:g('teudat'),consulting:g('consulting'),
+    phone:g('phone'),email:g('email'),year:g('year'),sector:g('sector'),
+    building_type:g('building_type'),total_area:g('total_area'),cooled_area:g('cooled_area'),
+    area_diff:g('area_diff')==='yes'?'כן':'לא',
+    elec_peak:g('elec_peak'),elec_off:g('elec_off'),elec_flat:g('elec_flat'),
+    elec_total:document.getElementById('elec_total').textContent,
+    elec_co2:document.getElementById('elec_co2').textContent,
+    green_kwh:g('green_kwh'),suppliers:g('suppliers'),
+    pv_kw:g('pv_kw'),pv_kwh:g('pv_kwh'),pv_sold:g('pv_sold'),
+    biogas_kw:g('biogas_kw'),biogas_kwh:g('biogas_kwh'),biogas_sold:g('biogas_sold'),
+    other_gen:g('other_gen')==='yes'?'כן':'לא',storage:g('storage')==='yes'?'יש':'אין',
+    f_mazot_k:g('f_mazot_k'),f_mazot_kv:g('f_mazot_kv'),f_jet:g('f_jet'),
+    f_solar_s:g('f_solar_s'),f_kerosene:g('f_kerosene'),f_benzin:g('f_benzin'),
+    f_gpm:g('f_gpm'),f_gas:g('f_gas'),f_coal:g('f_coal'),f_nafta:g('f_nafta'),
+    f_petcoke:g('f_petcoke'),f_bitumen:g('f_bitumen'),
+    f_biogas1:g('f_biogas1'),f_biogas2:g('f_biogas2'),f_other:g('f_other'),
+    catering:g('catering'),laundry:g('laundry'),
+    output_unit:g('output_unit'),output_qty:g('output_qty'),
+    efficiency:g('efficiency')==='yes'?'כן':'לא',eff_text:g('eff_text'),
+    benz_count:g('benz_count'),benz_km:g('benz_km'),benz_liter:g('benz_liter'),
+    solar_count:g('solar_count'),solar_km:g('solar_km'),solar_liter:g('solar_liter'),
+    gpm_count:g('gpm_count'),gpm_km:g('gpm_km'),gpm_kg:g('gpm_kg'),
+    natgas_count:g('natgas_count'),natgas_km:g('natgas_km'),natgas_mmbtu:g('natgas_mmbtu'),
+    ev_count:g('ev_count'),ev_km:g('ev_km'),ev_kwh:g('ev_kwh'),chargers:g('chargers')==='yes'?'יש':'אין',
+    fork_total:g('fork_total'),fork_elec:g('fork_elec'),hev_other:g('hev_other'),
+    hev_solar:g('hev_solar'),hev_kwh:g('hev_kwh'),
+    cars_total:document.getElementById('cars_total').textContent,
+    km_total:document.getElementById('km_total').textContent,
+    cars_co2:document.getElementById('cars_co2').textContent,
+    muni_total_kwh:g('muni_total_kwh'),muni_co2:document.getElementById('muni_co2').textContent,
+    muni_suppliers:g('muni_suppliers'),muni_lighting_kwh:g('muni_lighting_kwh'),
+    muni_lamps:g('muni_lamps'),muni_edu_kwh:g('muni_edu_kwh'),
+    muni_students_total:g('muni_students_total'),muni_students_area:g('muni_students_area'),
+    muni_fuel_cars:g('muni_fuel_cars'),muni_ev_cars:g('muni_ev_cars'),
+    muni_diesel:g('muni_diesel'),muni_gasoline:g('muni_gasoline'),muni_lpg:g('muni_lpg'),
+    muni_charge_public:g('muni_charge_public'),muni_charge_kwh:g('muni_charge_kwh'),
+    muni_ac_stations:g('muni_ac_stations'),muni_ac_sockets:g('muni_ac_sockets'),
+    muni_dc_stations:g('muni_dc_stations'),muni_ultra_stations:g('muni_ultra_stations'),
+    muni_pv_kw:g('muni_pv_kw'),muni_pv_kwh:g('muni_pv_kwh'),muni_wind_kw:g('muni_wind_kw'),
+    notes:g('notes')
+  };
+}
+
+function buildEmailText(d){
+  return `דיווח אנרגיה — ${d.company} — ${d.year}
+$==================================================
+חברה: ${d.company} | איש קשר: ${d.contact} | ת.ז: ${d.teudat}
+חברת ייעוץ: ${d.consulting} | טלפון: ${d.phone} | דוא"ל: ${d.email}
+מגזר: ${d.sector} | סוג מבנה: ${d.building_type}
+שטח בנוי: ${d.total_area} מ"ר | שטח ממוזג: ${d.cooled_area} מ"ר
+
+--- אתר ---
+חשמל פסגה: ${d.elec_peak} | שפל: ${d.elec_off} | שאינה תעו"ז: ${d.elec_flat}
+סה"כ: ${d.elec_total} kWh | CO₂: ${d.elec_co2} טון | חשמל ירוק: ${d.green_kwh} kWh
+ספקים: ${d.suppliers}
+PV: ${d.pv_kw} kW | ${d.pv_kwh} kWh | נמכר: ${d.pv_sold} kWh
+ביוגז: ${d.biogas_kw} kW | ${d.biogas_kwh} kWh | אגירה: ${d.storage}
+דלקים: סולר ${d.f_solar_s}L | בנזין ${d.f_benzin}L | גפ"מ ${d.f_gpm}ק"ג | גז ${d.f_gas}MMBTU
+קרוסין ${d.f_kerosene}L | סילוני ${d.f_jet}ט | פטקוק ${d.f_petcoke}ט | ביטומן ${d.f_bitumen}ט
+ביוגז בוצה ${d.f_biogas1} | ביוגז מטמנות ${d.f_biogas2} | אחר ${d.f_other}
+הסעדה: ${d.catering} | כביסה: ${d.laundry}
+תפוקה: ${d.output_qty} ${d.output_unit} | התייעלות: ${d.efficiency}
+${d.eff_text}
+
+--- כלי רכב ---
+בנזין: ${d.benz_count} רכבים | ${d.benz_km} ק"מ | ${d.benz_liter} ליטר
+סולר: ${d.solar_count} | ${d.solar_km} ק"מ | ${d.solar_liter} ליטר
+גפ"מ: ${d.gpm_count} | ${d.gpm_km} ק"מ | ${d.gpm_kg} ק"ג
+גז טבעי: ${d.natgas_count} | ${d.natgas_km} ק"מ | ${d.natgas_mmbtu} MMBTU
+חשמלי: ${d.ev_count} | ${d.ev_km} ק"מ | ${d.ev_kwh} kWh | עמדות: ${d.chargers}
+צמ"ה: ${d.fork_total} (${d.fork_elec} חשמלי) | סולר: ${d.hev_solar}L | חשמל: ${d.hev_kwh} kWh
+סה"כ: ${d.cars_total} רכבים | ${d.km_total} ק"מ | CO₂: ${d.cars_co2} טון
+
+--- רשות מקומית ---
+סה"כ חשמל: ${d.muni_total_kwh} kWh | CO₂: ${d.muni_co2} טון | ספקים: ${d.muni_suppliers}
+תאורת חוץ: ${d.muni_lighting_kwh} kWh | ${d.muni_lamps} פנסים
+חינוך: ${d.muni_edu_kwh} kWh | ${d.muni_students_total} תלמידים
+כלי רכב: ${d.muni_fuel_cars} דלק | ${d.muni_ev_cars} חשמלי
+דלקים: סולר ${d.muni_diesel}L | בנזין ${d.muni_gasoline}L | גפ"מ ${d.muni_lpg}ק"ג
+עמדות טעינה: ${d.muni_charge_public} ציבוריות | AC: ${d.muni_ac_stations} | DC: ${d.muni_dc_stations}
+PV: ${d.muni_pv_kw} kWp | ${d.muni_pv_kwh} kWh | רוח: ${d.muni_wind_kw} kW
+
+הערות: ${d.notes}`;
+}
+
+function downloadExcel(d){
+  const wb=XLSX.utils.book_new();
+  const site=[
+    ['דיווח אנרגיה — NRG Redesign','','',''],
+    ['חברה',d.company,'שנה',d.year],
+    ['איש קשר',d.contact,'ת.ז.',d.teudat],
+    ['טלפון',d.phone,'דוא"ל',d.email],
+    ['מגזר',d.sector,'סוג מבנה',d.building_type],
+    ['שטח בנוי מ"ר',d.total_area,'שטח ממוזג מ"ר',d.cooled_area],[''],
+    ['=== חשמל ===','','',''],
+    ['פסגה kWh',d.elec_peak,'שפל kWh',d.elec_off],
+    ['שאינה תעו"ז kWh',d.elec_flat,'סה"כ kWh',d.elec_total],
+    ['חשמל ירוק kWh',d.green_kwh,'CO₂eq טון',d.elec_co2],
+    ['ספקים',d.suppliers,'',''],[''],
+    ['=== אנרגיה מתחדשת ===','','',''],
+    ['PV kW',d.pv_kw,'PV kWh',d.pv_kwh],['PV נמכר kWh',d.pv_sold,'אגירה',d.storage],
+    ['ביוגז kW',d.biogas_kw,'ביוגז kWh',d.biogas_kwh],[''],
+    ['=== דלקים אתר ===','','',''],
+    ['מזוט קל טון',d.f_mazot_k,'מזוט כבד טון',d.f_mazot_kv],
+    ['סילוני טון',d.f_jet,'סולר ליטר',d.f_solar_s],
+    ['קרוסין ליטר',d.f_kerosene,'בנזין ליטר',d.f_benzin],
+    ['גפ"מ ק"ג',d.f_gpm,'גז טבעי MMBTU',d.f_gas],
+    ['פחם טון',d.f_coal,'נפטא טון',d.f_nafta],
+    ['פטקוק טון',d.f_petcoke,'ביטומן טון',d.f_bitumen],
+    ['ביוגז בוצה מק"ת',d.f_biogas1,'ביוגז מטמנות מק"ת',d.f_biogas2],
+    ['אחר טש"ן',d.f_other,'',''],[''],
+    ['הסעדה',d.catering,'כביסה',d.laundry],
+    ['יחידת תפוקה',d.output_unit,'כמות',d.output_qty],
+    ['התייעלות',d.efficiency,'פירוט',d.eff_text],
+  ];
+  const ws1=XLSX.utils.aoa_to_sheet(site);
+  ws1['!cols']=[{wch:24},{wch:18},{wch:24},{wch:18}];
+  XLSX.utils.book_append_sheet(wb,ws1,'אתר');
+
+  const cars=[
+    ['דיווח כלי רכב','','',''],
+    ['סוג','כמות רכבים','נסועה ק"מ','צריכה'],
+    ['בנזין',d.benz_count,d.benz_km,d.benz_liter+' ל'],
+    ['סולר',d.solar_count,d.solar_km,d.solar_liter+' ל'],
+    ['גפ"מ',d.gpm_count,d.gpm_km,d.gpm_kg+' ק"ג'],
+    ['גז טבעי',d.natgas_count,d.natgas_km,d.natgas_mmbtu+' MMBTU'],
+    ['חשמלי',d.ev_count,d.ev_km,d.ev_kwh+' kWh'],[''],
+    ['סה"כ',d.cars_total,d.km_total,'CO₂: '+d.cars_co2+' טון'],
+    ['עמדות טעינה',d.chargers,'',''],[''],
+    ['צמ"ה סה"כ',d.fork_total,'חשמלי',d.fork_elec],
+    ['צמ"ה סולר ל',d.hev_solar,'צמ"ה חשמל kWh',d.hev_kwh],
+  ];
+  const ws2=XLSX.utils.aoa_to_sheet(cars);
+  ws2['!cols']=[{wch:22},{wch:14},{wch:16},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws2,'כלי רכב');
+
+  const muni=[
+    ['דיווח רשות מקומית','','',''],
+    ['סה"כ חשמל kWh',d.muni_total_kwh,'CO₂eq טון',d.muni_co2],
+    ['ספקים',d.muni_suppliers,'',''],
+    ['תאורת חוץ kWh',d.muni_lighting_kwh,'פנסים',d.muni_lamps],
+    ['חינוך kWh',d.muni_edu_kwh,'תלמידים',d.muni_students_total],
+    ['רכבי דלק',d.muni_fuel_cars,'רכבים חשמליים',d.muni_ev_cars],
+    ['סולר ל',d.muni_diesel,'בנזין ל',d.muni_gasoline],
+    ['גפ"מ ק"ג',d.muni_lpg,'',''],
+    ['עמדות טעינה ציבוריות',d.muni_charge_public,'kWh',d.muni_charge_kwh],
+    ['עמדות AC',d.muni_ac_stations,'עמדות DC',d.muni_dc_stations],
+    ['PV kWp',d.muni_pv_kw,'PV kWh',d.muni_pv_kwh],
+    ['רוח kW',d.muni_wind_kw,'',''],
+  ];
+  const ws3=XLSX.utils.aoa_to_sheet(muni);
+  ws3['!cols']=[{wch:24},{wch:16},{wch:24},{wch:16}];
+  XLSX.utils.book_append_sheet(wb,ws3,'רשות מקומית');
+
+  XLSX.writeFile(wb,`NRG_Report_${d.company}_${d.year}.xlsx`);
+}
+
+function downloadPDF(d){
+  const he = (v) => String(v||'—');
+
+  const rows = (pairs) => pairs.map(([l,v]) =>
+    `<tr><td class="lbl">${l}</td><td class="val">${he(v)}</td></tr>`
+  ).join('');
+
+  const sec = (title) =>
+    `<tr class="sec-row"><td colspan="2" class="sec-title">${title}</td></tr>`;
+
+  const tableHTML = `
+    <table>
+      ${sec('פרטי לקוח')}
+      ${rows([
+        ['שם החברה / הרשות', d.company],
+        ['איש קשר / ממונה אנרגיה', d.contact],
+        ['מס\' ת.ז.', d.teudat],
+        ['חברת ייעוץ', d.consulting],
+        ['טלפון', d.phone],
+        ['דוא"ל', d.email],
+        ['שנת דיווח', d.year],
+        ['מגזר פעילות', d.sector],
+        ['סוג מבנה', d.building_type],
+        ['שטח בנוי (מ"ר)', d.total_area],
+        ['שטח ממוזג (מ"ר)', d.cooled_area],
+      ])}
+
+      ${sec('צריכת חשמל שנתית')}
+      ${rows([
+        ['צריכה בפסגה (kWh)', d.elec_peak],
+        ['צריכה בשפל (kWh)', d.elec_off],
+        ['צריכה שאינה בתעו"ז (kWh)', d.elec_flat],
+        ['סה"כ חשמל (kWh)', d.elec_total],
+        ['חשמל ירוק (kWh)', d.green_kwh],
+        ['פליטות CO₂eq (טון)', d.elec_co2],
+        ['ספקי חשמל', d.suppliers],
+      ])}
+
+      ${sec('הפקת אנרגיה מתחדשת')}
+      ${rows([
+        ['סולארי מותקן (kW)', d.pv_kw],
+        ['יצור סולארי (kWh)', d.pv_kwh],
+        ['נמכר לרשת (kWh)', d.pv_sold],
+        ['מערכות אגירה', d.storage],
+        ['ביוגז מותקן (kW)', d.biogas_kw],
+        ['ביוגז יצור (kWh)', d.biogas_kwh],
+        ['מקורות הפקה אחרים', d.other_gen],
+      ])}
+
+      ${sec('צריכת דלקים שנתית (לא לכלי רכב)')}
+      ${rows([
+        ['מזוט קל (טון)', d.f_mazot_k],
+        ['מזוט כבד (טון)', d.f_mazot_kv],
+        ['דלק סילוני (טון)', d.f_jet],
+        ['סולר (ליטר)', d.f_solar_s],
+        ['קרוסין (ליטר)', d.f_kerosene],
+        ['בנזין (ליטר)', d.f_benzin],
+        ['גפ"מ (ק"ג)', d.f_gpm],
+        ['גז טבעי (MMBTU)', d.f_gas],
+        ['פחם (טון)', d.f_coal],
+        ['נפטא (טון)', d.f_nafta],
+        ['פטקוק (טון)', d.f_petcoke],
+        ['ביטומן (טון)', d.f_bitumen],
+        ['ביוגז בוצה (מק"ת)', d.f_biogas1],
+        ['ביוגז מטמנות (מק"ת)', d.f_biogas2],
+        ['אחר (טש"ן)', d.f_other],
+      ])}
+
+      ${sec('שירותים ואנרגיה סגולית')}
+      ${rows([
+        ['שירותי הסעדה', d.catering],
+        ['שירותי כביסה', d.laundry],
+        ['יחידת תפוקה', d.output_unit],
+        ['כמות שנתית', d.output_qty],
+        ['פרויקטי התייעלות', d.efficiency],
+        ['פירוט התייעלות', d.eff_text],
+      ])}
+
+      ${sec('כלי רכב')}
+      ${rows([
+        ['רכבי בנזין — כמות', d.benz_count],
+        ['רכבי בנזין — ק"מ', d.benz_km],
+        ['רכבי בנזין — ליטר', d.benz_liter],
+        ['רכבי סולר — כמות', d.solar_count],
+        ['רכבי סולר — ק"מ', d.solar_km],
+        ['רכבי סולר — ליטר', d.solar_liter],
+        ['רכבי גפ"מ — כמות', d.gpm_count],
+        ['רכבי גפ"מ — ק"מ', d.gpm_km],
+        ['רכבים חשמליים — כמות', d.ev_count],
+        ['רכבים חשמליים — ק"מ', d.ev_km],
+        ['טעינת רכבים חשמליים (kWh)', d.ev_kwh],
+        ['עמדות טעינה', d.chargers],
+        ['סה"כ רכבים', d.cars_total],
+        ['סה"כ ק"מ', d.km_total],
+        ['פליטות CO₂eq רכב (טון)', d.cars_co2],
+      ])}
+
+      ${sec('כלי צמ"ה')}
+      ${rows([
+        ['מלגזות סה"כ', d.fork_total],
+        ['מלגזות חשמליות', d.fork_elec],
+        ['כלי צמ"ה אחרים', d.hev_other],
+        ['צריכת סולר (ליטר)', d.hev_solar],
+        ['צריכת חשמל (קוט"ש)', d.hev_kwh],
+      ])}
+
+      ${d.muni_total_kwh && d.muni_total_kwh !== '0' ? `
+      ${sec('רשות מקומית')}
+      ${rows([
+        ['סה"כ חשמל (kWh)', d.muni_total_kwh],
+        ['פליטות CO₂eq (טון)', d.muni_co2],
+        ['ספקי חשמל', d.muni_suppliers],
+        ['תאורת חוץ (kWh)', d.muni_lighting_kwh],
+        ['מספר פנסים', d.muni_lamps],
+        ['מוסדות חינוך (kWh)', d.muni_edu_kwh],
+        ['מספר תלמידים', d.muni_students_total],
+        ['רכבי דלק', d.muni_fuel_cars],
+        ['רכבים חשמליים', d.muni_ev_cars],
+        ['סולר (ליטר)', d.muni_diesel],
+        ['בנזין (ליטר)', d.muni_gasoline],
+        ['גפ"מ (ק"ג)', d.muni_lpg],
+        ['עמדות טעינה ציבוריות', d.muni_charge_public],
+        ['עמדות AC', d.muni_ac_stations],
+        ['עמדות DC', d.muni_dc_stations],
+        ['סולארי (kWp)', d.muni_pv_kw],
+        ['ייצור סולארי (kWh)', d.muni_pv_kwh],
+        ['רוח (kW)', d.muni_wind_kw],
+      ])}` : ''}
+
+      ${d.notes ? `
+      ${sec('הערות')}
+      <tr><td colspan="2" style="padding:6px 8px;font-size:11px;">${he(d.notes)}</td></tr>` : ''}
+    </table>
+  `;
+
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>דיווח אנרגיה — ${he(d.company)} — ${he(d.year)}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Heebo', Arial, sans-serif; direction: rtl; font-size: 11px; color: #1a1a1a; background: #fff; }
+  .header { background: #639922; color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .header h1 { font-size: 15px; font-weight: 600; }
+  .header p { font-size: 11px; opacity: 0.85; margin-top: 2px; }
+  .header-right { text-align: left; font-size: 11px; opacity: 0.9; }
+  .content { padding: 16px 20px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+  .sec-row { background: #eaf3de; }
+  .sec-title { font-weight: 600; font-size: 11px; color: #27500a; padding: 5px 8px; border-top: 1px solid #97c459; }
+  .lbl { width: 52%; padding: 3px 8px; color: #4a6320; font-weight: 500; border-bottom: 1px solid #f0f5e8; }
+  .val { width: 48%; padding: 3px 8px; color: #1a1a1a; border-bottom: 1px solid #f0f5e8; }
+  .summary { background: #f1f8e9; border: 1px solid #c0dd97; border-radius: 6px; padding: 10px 14px; margin: 12px 0; }
+  .summary h3 { font-size: 11px; color: #27500a; margin-bottom: 4px; }
+  .summary p { font-size: 12px; font-weight: 600; color: #1b5e20; }
+  .footer { border-top: 1px solid #d4e6b5; padding: 8px 20px; font-size: 9px; color: #639922; display: flex; justify-content: space-between; margin-top: 12px; }
+  @media print {
+    body { font-size: 10px; }
+    @page { margin: 10mm; size: A4; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>NRG Redesign — דיווח אנרגיה שנתי</h1>
+    <p>${he(d.company)} | שנת ${he(d.year)} | מגזר: ${he(d.sector)}</p>
+  </div>
+  <div class="header-right">
+    <div>ממונה: ${he(d.contact)}</div>
+    <div>${he(d.phone)} | ${he(d.email)}</div>
+  </div>
+</div>
+<div class="content">
+  <div class="summary">
+    <h3>סיכום פליטות CO₂eq</h3>
+    <p>חשמל באתר: ${he(d.elec_co2)} טון &nbsp;|&nbsp; כלי רכב: ${he(d.cars_co2)} טון</p>
+  </div>
+  ${tableHTML}
+</div>
+<div class="footer">
+  <span>NRG Redesign | daniel@nrgredesign.com | nrgredesign.com</span>
+  <span>הופק: ${new Date().toLocaleDateString('he-IL')}</span>
+</div>
+<script>
+  setTimeout(() => { window.print(); }, 800);
+<\/script>
+</body>
+</html>`);
+  printWindow.document.close();
+}
+
+async function submitForm(){
+  if(!g('co_name')||!g('contact')){alert('נא למלא שם חברה ואיש קשר');return;}
+  const btn=document.getElementById('submit_btn');
+  document.getElementById('st_sending').style.display='block';
+  document.getElementById('st_success').style.display='none';
+  document.getElementById('st_error').style.display='none';
+  btn.disabled=true;
+  const d=D();
+  try{downloadExcel(d);}catch(e){}
+  setTimeout(()=>{try{downloadPDF(d);}catch(e){}},800);
+  try{
+    await emailjs.send(SVC,TPL,{to_email:'daniel@nrgredesign.com',from_name:d.company,subject:'דיווח אנרגיה — '+d.company+' — '+d.year,message:buildEmailText(d)});
+    document.getElementById('st_sending').style.display='none';
+    document.getElementById('st_success').style.display='block';
+    btn.textContent='✅ נשלח בהצלחה!';
+  }catch(err){
+    document.getElementById('st_sending').style.display='none';
+    document.getElementById('st_error').textContent='שגיאת EmailJS: '+JSON.stringify(err)+'. הקבצים כבר הורדו.';
+    document.getElementById('st_error').style.display='block';
+    btn.disabled=false;btn.textContent='שלח דיווח ←';
+  }
+}
+
+function buildWhatsappText(d){
+  const line = (label, val) => val && val !== '0' ? `*${label}:* ${val}\n` : '';
+  return `*דיווח אנרגיה — ${d.company} — ${d.year}*\n` +
+`━━━━━━━━━━━━━━━━━━━━\n` +
+`*פרטי לקוח*\n` +
+line('חברה', d.company) +
+line('איש קשר', d.contact) +
+line('טלפון', d.phone) +
+line('דוא"ל', d.email) +
+line('מגזר', d.sector) +
+line('שטח בנוי', d.total_area + ' מ"ר') +
+`\n*⚡ חשמל*\n` +
+line('סה"כ חשמל', d.elec_total + ' kWh') +
+line('פליטות CO₂eq', d.elec_co2 + ' טון') +
+line('חשמל ירוק', d.green_kwh + ' kWh') +
+line('ספקים', d.suppliers) +
+`\n*☀️ אנרגיה מתחדשת*\n` +
+line('סולארי מותקן', d.pv_kw + ' kW') +
+line('יצור סולארי', d.pv_kwh + ' kWh') +
+line('אגירה', d.storage) +
+`\n*🚗 כלי רכב*\n` +
+line('סה"כ רכבים', d.cars_total) +
+line('סה"כ ק"מ', d.km_total) +
+line('פליטות CO₂eq רכב', d.cars_co2 + ' טון') +
+line('רכבים חשמליים', d.ev_count) +
+`\n*📊 סיכום CO₂eq*\n` +
+`⚡ אתר: *${d.elec_co2} טון*  🚗 רכב: *${d.cars_co2} טון*\n` +
+(d.notes ? `\n*הערות:* ${d.notes}\n` : '') +
+`\n_NRG Redesign | nrgredesign.com_`;
+}
+
+function sendWhatsapp(){
+  if(!g('co_name')){alert('נא למלא שם חברה תחילה');return;}
+  const d = D();
+  const text = buildWhatsappText(d);
+  const encoded = encodeURIComponent(text);
+  // Open directly to Daniel's number
+  window.open('https://wa.me/972524847723?text=' + encoded, '_blank');
+}
+</script>
+</body>
+</html>
