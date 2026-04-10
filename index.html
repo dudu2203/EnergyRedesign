@@ -2401,15 +2401,44 @@ input[type="color"].de-color-input {
                     </table>
                   </div>
                 </div>
+                <!-- טבלה רביעית -->
+                <div style="margin-bottom:24px;">
+                  <div class="elec-year-bar">
+                    <label><i class="fas fa-calendar-alt"></i> שנה:</label>
+                    <select class="elec-year-select" id="elec-year-4" onchange="elecYearChanged(4)"></select>
+                    <span style="font-size:12px;color:var(--primary);font-weight:500;">(טבלה רביעית)</span>
+                  </div>
+                  <div class="elec-table-wrap">
+                    <table class="elec-table" id="elec-table-4">
+                      <thead>
+                        <tr>
+                          <th class="col-month">חודש</th>
+                          <th class="group-header">פסגה KWh</th>
+                          <th class="group-header">פסגה ₪</th>
+                          <th class="group-header">שפל KWh</th>
+                          <th class="group-header">שפל ₪</th>
+                          <th class="total-kw">סה"כ KWh</th>
+                          <th class="total-nis">סה"כ ₪</th>
+                        </tr>
+                      </thead>
+                      <tbody id="elec-body-4"></tbody>
+                      <tfoot id="elec-foot-4"></tfoot>
+                    </table>
+                  </div>
+                </div>
               </div>
-              <!-- ══ כפתור יבוא אקסל לחשמל ══ -->
-              <div style="margin-top:10px;margin-bottom:6px;display:flex;align-items:center;gap:10px;">
-                <button type="button" class="btn btn-outline btn-sm" id="btn-import-elec-excel" onclick="openImportExcel('elec')">
-                  <i class="fas fa-file-excel" style="color:#217346;"></i> יבוא מאקסל (חשמל)
+              <!-- ══ כפתור יבוא אקסל מאוחד ══ -->
+              <div style="margin-top:10px;margin-bottom:16px;display:flex;align-items:center;gap:12px;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:10px;padding:12px 16px;">
+                <i class="fas fa-file-excel" style="color:#217346;font-size:22px;"></i>
+                <div>
+                  <div style="font-weight:700;font-size:14px;color:#1b5e20;">יבוא נתונים מאקסל — חשמל, גז ודלק</div>
+                  <div style="font-size:11px;color:#388e3c;margin-top:2px;">הקובץ צריך להכיל 3 גיליונות: <strong>חשמל</strong>, <strong>גז</strong>, <strong>דלק</strong> — בכל גיליון עד 4 טבלאות שנתיות</div>
+                </div>
+                <button type="button" class="btn btn-sm" style="margin-right:auto;background:#217346;color:#fff;padding:8px 18px;border-radius:8px;font-weight:600;" onclick="openUnifiedImportExcel()">
+                  <i class="fas fa-upload"></i> בחר קובץ
                 </button>
-                <span style="font-size:11px;color:var(--text-hint);">קובץ עם עמודות: חודש / פסגה kWh / פסגה ₪ / שפל kWh / שפל ₪</span>
               </div>
-              <input type="file" id="import-elec-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImportExcel(this,'elec')" />
+              <input type="file" id="import-unified-input" accept=".xlsx,.xls" style="display:none;" onchange="handleUnifiedImportExcel(this)" />
 
               <!-- ══ גרפי חשמל ══ -->
               <div id="elec-charts-section" style="margin-top:20px;display:none;">
@@ -2495,7 +2524,6 @@ input[type="color"].de-color-input {
               <div class="elec-section" id="gas-tables-section" style="margin-top:28px;">
                 <div class="elec-section-title" style="cursor:pointer;" id="gas-section-toggle">
                   <i class="fas fa-fire" style="color:#1565c0;"></i> גז — פירוט חודשי
-                  <button type="button" class="btn btn-outline btn-sm" style="margin-right:auto;font-size:11px;padding:3px 10px;" onclick="event.stopPropagation();openImportExcel('gas')"><i class="fas fa-file-excel" style="color:#217346;"></i> יבוא אקסל</button>
                   <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-right:10px;">(4 טבלאות שנתיות)</span>
                   <i class="fas fa-chevron-down" id="gas-chevron" style="font-size:12px;margin-right:auto;margin-left:0;color:var(--text-hint);transition:transform .3s;"></i>
                 </div>
@@ -2595,13 +2623,11 @@ input[type="color"].de-color-input {
               </div>
               <!-- ══ סוף סקציית גז ══ -->
 
-              <input type="file" id="import-gas-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImportExcel(this,'gas')" />
 
               <!-- ══ סקציית דלקים ══ -->
               <div class="elec-section" id="fuel-tables-section" style="margin-top:28px;">
                 <div class="elec-section-title" style="cursor:pointer;" id="fuel-section-toggle">
                   <i class="fas fa-gas-pump" style="color:#bf360c;"></i> דלקים — פירוט חודשי
-                  <button type="button" class="btn btn-outline btn-sm" style="margin-right:auto;font-size:11px;padding:3px 10px;" onclick="event.stopPropagation();openImportExcel('fuel')"><i class="fas fa-file-excel" style="color:#217346;"></i> יבוא אקסל</button>
                   <span style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-right:10px;">(4 טבלאות שנתיות)</span>
                   <i class="fas fa-chevron-down" id="fuel-chevron" style="font-size:12px;margin-right:auto;margin-left:0;color:var(--text-hint);transition:transform .3s;"></i>
                 </div>
@@ -2710,7 +2736,6 @@ input[type="color"].de-color-input {
                 <strong id="fuel-cost-per-liter">—</strong>
                 <span>₪/ליטר</span>
               </div>
-              <input type="file" id="import-fuel-input" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleImportExcel(this,'fuel')" />
               <!-- ══ סוף סקציית דלקים ══ -->
 
               <!-- ══ גרף גז מול דלקים ══ -->
@@ -4414,17 +4439,7 @@ function renderSystemsList() {
     }
   }
 
-  if (systems.length === 0) {
-    container.innerHTML = '';
-    if (emptyEl) emptyEl.style.display = 'block';
-    if (totalsEl) totalsEl.style.display = 'none';
-    if (chartEl) chartEl.style.display = 'none';
-    return;
-  }
-
-  if (emptyEl) emptyEl.style.display = 'none';
-  if (totalsEl) totalsEl.style.display = '';
-  if (chartEl) chartEl.style.display = '';
+  // (empty check moved to after spaces calculation below)
 
   const header = `
     <div class="system-row-header">
@@ -4488,8 +4503,108 @@ function renderSystemsList() {
       </div>`;
   }).join('');
 
-  let htmlContent = header + rows;
-  if (filtered.length === 0 && activeCategory !== 'all') {
+  // Build aggregated lighting & HVAC rows from spaces
+  let spacesRowsHtml = '';
+  if (activeCategory === 'all' || activeCategory === 'lighting' || activeCategory === 'hvac') {
+    const spaces = App.currentSurvey?.spaces || [];
+    let totalLightingKw = 0, lightingSpaceNames = [];
+    let totalHvacKw = 0, hvacSpaceNames = [];
+    // שעות ימי עבודה לפי נתוני המשרד מתחילת הסקר
+    const _daysPerWeek = parseInt(App.currentSurvey?.working_days_per_week) || 5;
+    const _weeksPerYear = 50;
+    const workingDays = _daysPerWeek * _weeksPerYear;
+
+    // שעות עבודה יומיות — מהשדה hours_office (עדיפות) או מחישוב weekday_start/end
+    const workHours = (() => {
+      const hoursOffice = parseFloat(App.currentSurvey?.hours_office);
+      if (hoursOffice > 0) return hoursOffice;
+      // fallback: חישוב מהשעות
+      const s = App.currentSurvey?.weekday_start || '08:00';
+      const e = App.currentSurvey?.weekday_end   || '17:00';
+      try {
+        const [sh,sm]=s.split(':').map(Number),[eh,em]=e.split(':').map(Number);
+        const d=(eh*60+em-sh*60-sm)/60; return d>0?d:8;
+      } catch{return 8;}
+    })();
+
+    spaces.forEach(sp => {
+      const count = parseInt(sp.count)||1;
+      (sp.lighting||[]).forEach(r => {
+        const kwPerRoom = parseFloat(r.total_kw)||0;
+        if (kwPerRoom > 0) {
+          totalLightingKw += kwPerRoom * count;
+          lightingSpaceNames.push(`${sp.name||sp.type||'חלל'} (×${count})`);
+        }
+      });
+      (sp.hvac||[]).forEach(r => {
+        const kwPerRoom = parseFloat(r.total_kw)||0;
+        if (kwPerRoom > 0) {
+          totalHvacKw += kwPerRoom * count;
+          hvacSpaceNames.push(`${sp.name||sp.type||'חלל'} (×${count})`);
+        }
+      });
+    });
+
+    const catLighting = SYSTEM_CATEGORIES['lighting'] || { bg:'#fff9c4', color:'#f57f17', icon:'fa-lightbulb', label:'תאורה' };
+    const catHvac     = SYSTEM_CATEGORIES['hvac']     || { bg:'#e3f2fd', color:'#1565c0', icon:'fa-wind',      label:'מיזוג אוויר' };
+
+    if (totalLightingKw > 0 && (activeCategory === 'all' || activeCategory === 'lighting')) {
+      const kwhLt = Math.round(totalLightingKw * workHours * workingDays);
+      spacesRowsHtml += `
+        <div class="system-row">
+          <div class="sys-icon" style="background:${catLighting.bg};color:${catLighting.color};"><i class="fas ${catLighting.icon}"></i></div>
+          <div class="sys-info">
+            <div class="sys-name">תאורה — סיכום חללים</div>
+            <span class="sys-cat-badge"><i class="fas ${catLighting.icon}"></i> ${catLighting.label}</span>
+            <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">${[...new Set(lightingSpaceNames)].join(' | ')}</div>
+          </div>
+          <div class="sys-stat"><div class="sys-stat-val">${fmtNum(Math.round(totalLightingKw*100)/100)} × 1</div><div class="sys-stat-label">יחידות × kW</div></div>
+          <div class="sys-stat"><div class="sys-stat-val">${workHours}</div><div class="sys-stat-label">שעות/יום</div></div>
+          <div class="sys-stat"><div class="sys-stat-val">${workingDays}</div><div class="sys-stat-label">ימים/שנה</div></div>
+          <div class="sys-stat"><div class="sys-stat-val">1</div><div class="sys-stat-label">מקדם עומס</div></div>
+          <div class="sys-stat"><div class="sys-stat-val" style="color:var(--secondary);">${fmtNum(kwhLt)}</div><div class="sys-stat-label">kWh/שנה</div></div>
+          <div class="sys-actions"><span title="מסוכם מחללים" style="font-size:18px;color:var(--text-hint);"><i class="fas fa-layer-group"></i></span></div>
+        </div>`;
+    }
+
+    if (totalHvacKw > 0 && (activeCategory === 'all' || activeCategory === 'hvac')) {
+      const kwhHv = Math.round(totalHvacKw * workHours * workingDays);
+      spacesRowsHtml += `
+        <div class="system-row">
+          <div class="sys-icon" style="background:${catHvac.bg};color:${catHvac.color};"><i class="fas ${catHvac.icon}"></i></div>
+          <div class="sys-info">
+            <div class="sys-name">מיזוג — סיכום חללים</div>
+            <span class="sys-cat-badge"><i class="fas ${catHvac.icon}"></i> ${catHvac.label}</span>
+            <div style="font-size:11px;color:var(--text-hint);margin-top:2px;">${[...new Set(hvacSpaceNames)].join(' | ')}</div>
+          </div>
+          <div class="sys-stat"><div class="sys-stat-val">${fmtNum(Math.round(totalHvacKw*100)/100)} × 1</div><div class="sys-stat-label">יחידות × kW</div></div>
+          <div class="sys-stat"><div class="sys-stat-val">${workHours}</div><div class="sys-stat-label">שעות/יום</div></div>
+          <div class="sys-stat"><div class="sys-stat-val">${workingDays}</div><div class="sys-stat-label">ימים/שנה</div></div>
+          <div class="sys-stat"><div class="sys-stat-val">1</div><div class="sys-stat-label">מקדם עומס</div></div>
+          <div class="sys-stat"><div class="sys-stat-val" style="color:var(--secondary);">${fmtNum(kwhHv)}</div><div class="sys-stat-label">kWh/שנה</div></div>
+          <div class="sys-actions"><span title="מסוכם מחללים" style="font-size:18px;color:var(--text-hint);"><i class="fas fa-layer-group"></i></span></div>
+        </div>`;
+    }
+  }
+
+  // Check if we have anything to show
+  const hasSpacesData = spacesRowsHtml !== '';
+  const hasSystemsData = systems.length > 0;
+
+  if (!hasSystemsData && !hasSpacesData) {
+    container.innerHTML = '';
+    if (emptyEl) emptyEl.style.display = 'block';
+    if (totalsEl) totalsEl.style.display = 'none';
+    if (chartEl) chartEl.style.display = 'none';
+    return;
+  }
+
+  if (emptyEl) emptyEl.style.display = 'none';
+  if (totalsEl) totalsEl.style.display = '';
+  if (chartEl) chartEl.style.display = '';
+
+  let htmlContent = header + spacesRowsHtml + rows;
+  if (filtered.length === 0 && !hasSpacesData && activeCategory !== 'all') {
     const catLabel = SYSTEM_CATEGORIES[activeCategory]?.label || activeCategory;
     htmlContent = `<div style="text-align:center;padding:32px;color:var(--text-hint);"><i class="fas fa-filter" style="font-size:28px;margin-bottom:10px;display:block;"></i>אין מערכות בקטגוריה "${catLabel}"</div>`;
   }
@@ -6225,14 +6340,6 @@ function applyUserUI() {
   if (bnavAdmin) bnavAdmin.style.display = u.role === 'admin' ? 'flex' : 'none';
 }
 
-function openAnnualReport() {
-  window.open('energyreport.html', '_blank');
-}
-
-function openControlPanel() {
-  window.open('energysurvay.html', '_blank');
-}
-
 function bindLogout() {
   document.getElementById('btn-logout')?.addEventListener('click', () => {
     showConfirm('יציאה מהמערכת', 'האם אתה בטוח שברצונך להתנתק?', () => {
@@ -6526,7 +6633,7 @@ function openEditSurvey(id) {
   setText('form-title', 'עריכת סקר: ' + (s.site_name || ''));
   updateCompletion(); startAutosave(); window.scrollTo(0, 0);
   if (typeof loadSitePhotosToForm === 'function') setTimeout(loadSitePhotosToForm, 50);
-  setTimeout(() => initElecTables(parseField(s.elec_table_1, null), parseField(s.elec_table_2, null), parseField(s.elec_table_3, null)), 80);
+  setTimeout(() => initElecTables(parseField(s.elec_table_1, null), parseField(s.elec_table_2, null), parseField(s.elec_table_3, null), parseField(s.elec_table_4, null)), 80);
   App._elecCalcRows = null;
   App._gasData  = null;
   App._fuelData = null;
@@ -6579,7 +6686,7 @@ function createEmptySurvey() {
     electricity_supplier: '', voltage_level: '',
     transformers_count: 0, has_on_site_generation: false,
     energy_sources: [], transformers: [], systems: [], spaces: [],
-    elec_table_1: null, elec_table_2: null, elec_calc_rows: null
+    elec_table_1: null, elec_table_2: null, elec_table_3: null, elec_table_4: null, elec_calc_rows: null
   };
 }
 
@@ -7196,16 +7303,16 @@ function _elecEmptyRows() {
   return Array.from({length:12}, () => ({peak_kw:'', peak_nis:'', low_kw:'', low_nis:''}));
 }
 
-function initElecTables(data1, data2, data3) {
+function initElecTables(data1, data2, data3, data4) {
   if (!App._elecData) App._elecData = {};
   const curYear = new Date().getFullYear();
   const years = Array.from({length:10}, (_,i) => String(curYear - i));
 
-  [1, 2, 3].forEach(n => {
+  [1, 2, 3, 4].forEach(n => {
     const sel = document.getElementById('elec-year-' + n);
     if (!sel) return;
     sel.innerHTML = years.map(y => `<option value="${y}">${y}</option>`).join('');
-    const saved = n === 1 ? data1 : n === 2 ? data2 : data3;
+    const saved = [data1, data2, data3, data4][n-1];
     if (saved && saved.year) {
       sel.value = saved.year;
       App._elecData[n] = { year: saved.year, rows: saved.rows || _elecEmptyRows() };
@@ -7863,42 +7970,80 @@ function renderElecCharts() {
 }
 
 // ══════════════════════════════════════════════
-// יבוא אקסל לטבלאות חשמל / גז / דלק
 // ══════════════════════════════════════════════
-var _importTarget = null;
+// יבוא אקסל מאוחד — חשמל / גז / דלק
+// ══════════════════════════════════════════════
 
-function openImportExcel(type) {
-  _importTarget = type;
-  var inp = document.getElementById('import-' + type + '-input');
+function openUnifiedImportExcel() {
+  var inp = document.getElementById('import-unified-input');
   if (inp) inp.click();
 }
 
-function handleImportExcel(input, type) {
+// Legacy fallback
+function openImportExcel(type) { openUnifiedImportExcel(); }
+
+function handleUnifiedImportExcel(input) {
   var file = input.files[0];
   if (!file) return;
   input.value = '';
 
-  // טען SheetJS אם צריך
   if (typeof XLSX === 'undefined') {
     toast('טוען ספריית אקסל...', 'info');
     var s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-    s.onload = function() { _parseImportFile(file, type); };
+    s.onload = function() { _parseUnifiedExcel(file); };
     s.onerror = function() { toast('שגיאה בטעינת ספריית אקסל', 'error'); };
     document.head.appendChild(s);
   } else {
-    _parseImportFile(file, type);
+    _parseUnifiedExcel(file);
   }
 }
 
-function _parseImportFile(file, type) {
+function _parseUnifiedExcel(file) {
   var reader = new FileReader();
   reader.onload = function(e) {
     try {
-      var wb = XLSX.read(e.target.result, { type: 'array' });
-      var ws = wb.Sheets[wb.SheetNames[0]];
-      var rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
-      _applyImportedData(rows, type);
+      var wb = XLSX.read(e.target.result, { type: 'array', cellFormula: false });
+      var results = { elec: 0, gas: 0, fuel: 0 };
+
+      // מיפוי גיליונות
+      var sheetMap = {};
+      wb.SheetNames.forEach(function(name) {
+        var n = name.trim();
+        if (n === 'חשמל') sheetMap['elec'] = name;
+        else if (n === 'גז') sheetMap['gas'] = name;
+        else if (n === 'דלק' || n === 'דלקים') sheetMap['fuel'] = name;
+      });
+
+      if (!sheetMap['elec'] && !sheetMap['gas'] && !sheetMap['fuel']) {
+        toast('לא נמצאו גיליונות בשם חשמל / גז / דלק', 'error');
+        return;
+      }
+
+      if (sheetMap['elec']) results.elec = _importElecSheet(wb.Sheets[sheetMap['elec']]);
+      if (sheetMap['fuel']) results.fuel = _importFuelSheet(wb.Sheets[sheetMap['fuel']]);
+
+      // גז — פתח את הסקציה לפני הייבוא כדי ש-DOM יהיה זמין
+      if (sheetMap['gas']) {
+        var gasSec = document.getElementById('gas-tables-body');
+        if (gasSec) gasSec.style.display = '';
+        var gasChev = document.getElementById('gas-chevron');
+        if (gasChev) gasChev.style.transform = 'rotate(180deg)';
+        results.gas = _importGasSheet(wb.Sheets[sheetMap['gas']]);
+        // רנדר מחדש אחרי שה-DOM זמין
+        [1,2,3,4].forEach(function(n) {
+          if (App._gasData && App._gasData[n]) renderGasBody(n);
+        });
+      }
+
+      scheduleAutosave();
+      var msg = [];
+      if (results.elec > 0) msg.push('חשמל: ' + results.elec + ' טבלאות');
+      if (results.gas  > 0) msg.push('גז: ' + results.gas + ' טבלאות');
+      if (results.fuel > 0) msg.push('דלק: ' + results.fuel + ' טבלאות');
+      if (msg.length > 0) toast('יובא בהצלחה — ' + msg.join(' | ') + ' ✓', 'success');
+      else toast('לא נמצאו נתונים תקינים בקובץ', 'warning');
+
     } catch(err) {
       console.error('Import error:', err);
       toast('שגיאה בקריאת הקובץ: ' + err.message, 'error');
@@ -7907,100 +8052,183 @@ function _parseImportFile(file, type) {
   reader.readAsArrayBuffer(file);
 }
 
-function _applyImportedData(rows, type) {
-  // מסנן שורות ריקות
-  rows = rows.filter(function(r){ return r.some(function(c){ return String(c).trim() !== ''; }); });
-  // מדלג על שורת כותרת אם הראשונה לא מספרית
-  var startRow = 0;
-  if (rows.length > 0 && isNaN(parseFloat(rows[0][0])) && isNaN(parseFloat(rows[0][1]))) startRow = 1;
-
-  var MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
-
-  // מיפוי שם חודש → אינדקס (עברית ואנגלית)
-  var MONTHS_MAP = {};
-  MONTHS_HE.forEach(function(m,i){ MONTHS_MAP[m]=i; });
-  ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].forEach(function(m,i){ MONTHS_MAP[m]=i; });
-  [1,2,3,4,5,6,7,8,9,10,11,12].forEach(function(m,i){ MONTHS_MAP[String(m)]=i; });
-
-  function getMonthIdx(val) {
-    var v = String(val).trim().toLowerCase().replace(/[.\-]/g,'');
-    if (MONTHS_MAP[v] !== undefined) return MONTHS_MAP[v];
-    // חיפוש חלקי
-    for (var k in MONTHS_MAP) { if (k.indexOf(v) === 0 || v.indexOf(k) === 0) return MONTHS_MAP[k]; }
-    var n = parseInt(v); if (!isNaN(n) && n >= 1 && n <= 12) return n-1;
-    return -1;
-  }
-
-  if (type === 'elec') {
-    // עמודות: חודש | פסגה kWh | פסגה ₪ | שפל kWh | שפל ₪
-    var elecRows = new Array(12).fill(null).map(function(){ return {peak_kw:'',peak_nis:'',low_kw:'',low_nis:''}; });
-    var hasAny = false;
-    for (var i = startRow; i < rows.length && i - startRow < 15; i++) {
-      var r = rows[i];
-      var mi = getMonthIdx(r[0]);
-      if (mi < 0 || mi > 11) { mi = i - startRow; }
-      if (mi >= 0 && mi < 12) {
-        elecRows[mi] = {
-          peak_kw:  String(r[1]||'').replace(/,/g,'') || '',
-          peak_nis: String(r[2]||'').replace(/,/g,'') || '',
-          low_kw:   String(r[3]||'').replace(/,/g,'') || '',
-          low_nis:  String(r[4]||'').replace(/,/g,'') || ''
-        };
-        if (r[1]||r[2]||r[3]||r[4]) hasAny = true;
-      }
-    }
-    if (!hasAny) { toast('לא נמצאו נתונים תקינים בקובץ', 'warning'); return; }
-    // שמור בטבלה 1
-    if (App && App._elecData && App._elecData[1]) {
-      App._elecData[1].rows = elecRows;
-      renderElecBody(1);
-      _afterElecDataChange();
-      scheduleAutosave();
-      toast('נתוני חשמל יובאו בהצלחה לטבלה 1 ✓', 'success');
-    }
-
-  } else if (type === 'gas') {
-    // עמודות: חודש | כמות | עלות
-    var gasRows = new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; });
-    var hasAny = false;
-    for (var i = startRow; i < rows.length && i - startRow < 15; i++) {
-      var r = rows[i];
-      var mi = getMonthIdx(r[0]);
-      if (mi < 0 || mi > 11) mi = i - startRow;
-      if (mi >= 0 && mi < 12) {
-        gasRows[mi] = { qty: String(r[1]||'').replace(/,/g,''), cost: String(r[2]||'').replace(/,/g,'') };
-        if (r[1]||r[2]) hasAny = true;
-      }
-    }
-    if (!hasAny) { toast('לא נמצאו נתונים תקינים בקובץ', 'warning'); return; }
-    if (App && App._gasData && App._gasData.tables && App._gasData.tables[1]) {
-      App._gasData.tables[1].rows = gasRows;
-      renderGasBody(1);
-      scheduleAutosave();
-      toast('נתוני גז יובאו בהצלחה לטבלה 1 ✓', 'success');
-    }
-
-  } else if (type === 'fuel') {
-    // עמודות: חודש | כמות | עלות
-    var fuelRows = new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; });
-    var hasAny = false;
-    for (var i = startRow; i < rows.length && i - startRow < 15; i++) {
-      var r = rows[i];
-      var mi = getMonthIdx(r[0]);
-      if (mi < 0 || mi > 11) mi = i - startRow;
-      if (mi >= 0 && mi < 12) {
-        fuelRows[mi] = { qty: String(r[1]||'').replace(/,/g,''), cost: String(r[2]||'').replace(/,/g,'') };
-        if (r[1]||r[2]) hasAny = true;
-      }
-    }
-    if (!hasAny) { toast('לא נמצאו נתונים תקינים בקובץ', 'warning'); return; }
-    if (App && App._fuelData && App._fuelData.tables && App._fuelData.tables[1]) {
-      App._fuelData.tables[1].rows = fuelRows;
-      renderFuelBody(1);
-      scheduleAutosave();
-      toast('נתוני דלק יובאו בהצלחה לטבלה 1 ✓', 'success');
+// ── חיפוש בלוקי שנה בגיליון ──
+// פורמט: שורה עם ('שנה', 2026) או ('שנה ', 2023)
+function _findYearBlocks(rows) {
+  var blocks = [];
+  for (var i = 0; i < rows.length; i++) {
+    var c0 = String(rows[i][0]||'').trim();
+    var c1 = rows[i][1];
+    if (c0 === 'שנה' && c1 && /^\d{4}$/.test(String(c1).trim())) {
+      blocks.push({ year: parseInt(c1), startRow: i + 1 });
+    } else if (/^\d{4}$/.test(c0)) {
+      blocks.push({ year: parseInt(c0), startRow: i + 1 });
     }
   }
+  return blocks;
+}
+
+// ── עזר: המרת גיליון לשורות ──
+function _sheetToRows(ws) {
+  if (!ws || !ws['!ref']) return [];
+  return XLSX.utils.sheet_to_json(ws, { header:1, defval:'' });
+}
+
+// ── עזר: אינדקס חודש ──
+var _MONTHS_MAP = {};
+['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'].forEach(function(m,i){ _MONTHS_MAP[m]=i; });
+
+function _monthIdx(val) {
+  var v = String(val||'').trim();
+  if (_MONTHS_MAP[v] !== undefined) return _MONTHS_MAP[v];
+  var n = parseInt(v); if (!isNaN(n) && n>=1 && n<=12) return n-1;
+  return -1;
+}
+
+function _cleanNum(v) {
+  var s = String(v||'').trim();
+  if (s.startsWith('=') || s === '') return '';
+  return s.replace(/,/g,'');
+}
+
+// ── ייבוא גיליון חשמל ──
+function _importElecSheet(ws) {
+  var rows = _sheetToRows(ws);
+  var blocks = _findYearBlocks(rows);
+  var imported = 0;
+  if (blocks.length === 0) {
+    if (_doImportElec(rows, 0, rows.length, 1, null)) imported++;
+    return imported;
+  }
+  blocks.forEach(function(block, bi) {
+    var endRow = bi+1 < blocks.length ? blocks[bi+1].startRow - 1 : rows.length;
+    if (_doImportElec(rows, block.startRow, endRow, bi+1, block.year)) imported++;
+  });
+  return imported;
+}
+
+function _doImportElec(rows, startRow, endRow, tableIdx, year) {
+  var elecRows = new Array(12).fill(null).map(function(){ return {peak_kw:'',peak_nis:'',low_kw:'',low_nis:''}; });
+  var hasAny = false, mCount = 0;
+  for (var i = startRow; i < endRow && i < rows.length; i++) {
+    var r = rows[i];
+    var c0 = String(r[0]||'').trim();
+    if (!c0 || c0==='חודש' || c0.startsWith('סה')) continue;
+    var mi = _monthIdx(c0);
+    if (mi < 0) mi = mCount;
+    if (mi >= 0 && mi < 12) {
+      elecRows[mi] = { peak_kw:_cleanNum(r[1]), peak_nis:_cleanNum(r[2]), low_kw:_cleanNum(r[3]), low_nis:_cleanNum(r[4]) };
+      if (r[1]||r[2]||r[3]||r[4]) hasAny = true;
+      mCount++;
+    }
+  }
+  if (!hasAny) return false;
+  if (App && App._elecData) {
+    if (!App._elecData[tableIdx]) App._elecData[tableIdx] = { year:'', rows: new Array(12).fill(null).map(function(){ return {peak_kw:'',peak_nis:'',low_kw:'',low_nis:''}; }) };
+    App._elecData[tableIdx].rows = elecRows;
+    if (year) { App._elecData[tableIdx].year = year; var sel = document.getElementById('elec-year-'+tableIdx); if (sel) sel.value = year; }
+    renderElecBody(tableIdx);
+    if (typeof _afterElecDataChange === 'function') _afterElecDataChange();
+  }
+  return true;
+}
+
+// ── ייבוא גיליון גז ──
+function _importGasSheet(ws) {
+  var rows = _sheetToRows(ws);
+  var blocks = _findYearBlocks(rows);
+  var imported = 0;
+  if (blocks.length === 0) {
+    if (_doImportGas(rows, 0, rows.length, 1, null)) imported++;
+    return imported;
+  }
+  blocks.forEach(function(block, bi) {
+    var endRow = bi+1 < blocks.length ? blocks[bi+1].startRow - 1 : rows.length;
+    if (_doImportGas(rows, block.startRow, endRow, bi+1, block.year)) imported++;
+  });
+  return imported;
+}
+
+function _doImportGas(rows, startRow, endRow, tableIdx, year) {
+  var gasRows = new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; });
+  var hasAny = false, mCount = 0;
+  for (var i = startRow; i < endRow && i < rows.length; i++) {
+    var r = rows[i];
+    var c0 = String(r[0]||'').trim();
+    if (!c0 || c0==='חודש' || c0.startsWith('סה')) continue;
+    var mi = _monthIdx(c0);
+    if (mi < 0) mi = mCount;
+    if (mi >= 0 && mi < 12) {
+      gasRows[mi] = { qty:_cleanNum(r[1]), cost:_cleanNum(r[2]) };
+      if (r[1]||r[2]) hasAny = true;
+      mCount++;
+    }
+  }
+  if (!hasAny) return false;
+  if (App && App._gasData) {
+    // עדכן את הנתונים
+    App._gasData[tableIdx] = App._gasData[tableIdx] || { year:'', rows: new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; }) };
+    App._gasData[tableIdx].rows = gasRows;
+    if (year) {
+      App._gasData[tableIdx].year = String(year);
+      // עדכן את ה-select של השנה
+      var sel = document.getElementById('gas-year-'+tableIdx);
+      if (sel) {
+        // וודא שהשנה קיימת ב-select
+        var opt = sel.querySelector('option[value="'+year+'"]');
+        if (!opt) {
+          var newOpt = document.createElement('option');
+          newOpt.value = String(year);
+          newOpt.textContent = String(year);
+          sel.insertBefore(newOpt, sel.firstChild);
+        }
+        sel.value = String(year);
+      }
+    }
+    renderGasBody(tableIdx);
+  }
+  return true;
+}
+
+// ── ייבוא גיליון דלק ──
+function _importFuelSheet(ws) {
+  var rows = _sheetToRows(ws);
+  var blocks = _findYearBlocks(rows);
+  var imported = 0;
+  if (blocks.length === 0) {
+    if (_doImportFuel(rows, 0, rows.length, 1, null)) imported++;
+    return imported;
+  }
+  blocks.forEach(function(block, bi) {
+    var endRow = bi+1 < blocks.length ? blocks[bi+1].startRow - 1 : rows.length;
+    if (_doImportFuel(rows, block.startRow, endRow, bi+1, block.year)) imported++;
+  });
+  return imported;
+}
+
+function _doImportFuel(rows, startRow, endRow, tableIdx, year) {
+  var fuelRows = new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; });
+  var hasAny = false, mCount = 0;
+  for (var i = startRow; i < endRow && i < rows.length; i++) {
+    var r = rows[i];
+    var c0 = String(r[0]||'').trim();
+    if (!c0 || c0==='חודש' || c0.startsWith('סה')) continue;
+    var mi = _monthIdx(c0);
+    if (mi < 0) mi = mCount;
+    if (mi >= 0 && mi < 12) {
+      fuelRows[mi] = { qty:_cleanNum(r[1]), cost:_cleanNum(r[2]) };
+      if (r[1]||r[2]) hasAny = true;
+      mCount++;
+    }
+  }
+  if (!hasAny) return false;
+  if (App && App._fuelData && App._fuelData.tables) {
+    if (!App._fuelData.tables[tableIdx]) App._fuelData.tables[tableIdx] = { year:'', rows: new Array(12).fill(null).map(function(){ return {qty:'',cost:''}; }) };
+    App._fuelData.tables[tableIdx].rows = fuelRows;
+    if (year) { App._fuelData.tables[tableIdx].year = year; var sel = document.getElementById('fuel-year-'+tableIdx); if (sel) sel.value = year; }
+    renderFuelBody(tableIdx);
+  }
+  return true;
 }
 
 // Helper: build a readable summary of electricity table data for exports
@@ -8201,6 +8429,7 @@ function collectData() {
     elec_table_1: App._elecData ? App._elecData[1] : null,
     elec_table_2: App._elecData ? App._elecData[2] : null,
     elec_table_3: App._elecData ? App._elecData[3] : null,
+    elec_table_4: App._elecData ? App._elecData[4] : null,
     elec_calc_rows: App._elecCalcRows || [],
     gas_table_1: App._gasData ? App._gasData[1] : null,
     gas_table_2: App._gasData ? App._gasData[2] : null,
@@ -8247,7 +8476,8 @@ async function refreshSurveysFromServer(showFeedback = false) {
         systems:        parseField(s.systems,         []),
         elec_table_1: s.elec_table_1 ? parseField(s.elec_table_1, null) : null,
         elec_table_2: s.elec_table_2 ? parseField(s.elec_table_2, null) : null,
-        elec_table_3: s.elec_table_3 ? parseField(s.elec_table_3, null) : null
+        elec_table_3: s.elec_table_3 ? parseField(s.elec_table_3, null) : null,
+        elec_table_4: s.elec_table_4 ? parseField(s.elec_table_4, null) : null
       }));
     // Keep local pending records
     const pendingLocal = App.surveys.filter(l => l.sync_status !== 'synced' && !deleted.includes(l.id));
@@ -8288,7 +8518,7 @@ function saveDraft(silent = false) {
     !(data.energy_sources || []).some(e => e.exists); // אין מקורות פעילים
   if (isNewEmpty) return;
 
-  const survey = { ...App.currentSurvey, ...data, status: (App.currentSurvey.status === 'submitted') ? 'submitted' : 'draft', sync_status: App.isOnline ? 'pending' : 'local', energy_sources: JSON.stringify(data.energy_sources), transformers: JSON.stringify(data.transformers), systems: JSON.stringify(data.systems), spaces: JSON.stringify(data.spaces || []), site_photos: JSON.stringify(data.site_photos || []), air_leaks: data.air_leaks ? JSON.stringify(data.air_leaks) : null, thermal_losses: data.thermal_losses ? JSON.stringify(data.thermal_losses) : null, elec_table_1: data.elec_table_1 ? JSON.stringify(data.elec_table_1) : null, elec_table_2: data.elec_table_2 ? JSON.stringify(data.elec_table_2) : null, elec_table_3: data.elec_table_3 ? JSON.stringify(data.elec_table_3) : null, elec_calc_rows: data.elec_calc_rows ? JSON.stringify(data.elec_calc_rows) : null, gas_table_1: data.gas_table_1 ? JSON.stringify(data.gas_table_1) : null, gas_table_2: data.gas_table_2 ? JSON.stringify(data.gas_table_2) : null, gas_table_3: data.gas_table_3 ? JSON.stringify(data.gas_table_3) : null, gas_table_4: data.gas_table_4 ? JSON.stringify(data.gas_table_4) : null, fuel_tables: data.fuel_tables ? JSON.stringify(data.fuel_tables) : null, updated_at: new Date().toISOString() };
+  const survey = { ...App.currentSurvey, ...data, status: (App.currentSurvey.status === 'submitted') ? 'submitted' : 'draft', sync_status: App.isOnline ? 'pending' : 'local', energy_sources: JSON.stringify(data.energy_sources), transformers: JSON.stringify(data.transformers), systems: JSON.stringify(data.systems), spaces: JSON.stringify(data.spaces || []), site_photos: JSON.stringify(data.site_photos || []), air_leaks: data.air_leaks ? JSON.stringify(data.air_leaks) : null, thermal_losses: data.thermal_losses ? JSON.stringify(data.thermal_losses) : null, elec_table_1: data.elec_table_1 ? JSON.stringify(data.elec_table_1) : null, elec_table_2: data.elec_table_2 ? JSON.stringify(data.elec_table_2) : null, elec_table_3: data.elec_table_3 ? JSON.stringify(data.elec_table_3) : null, elec_table_4: data.elec_table_4 ? JSON.stringify(data.elec_table_4) : null, elec_calc_rows: data.elec_calc_rows ? JSON.stringify(data.elec_calc_rows) : null, gas_table_1: data.gas_table_1 ? JSON.stringify(data.gas_table_1) : null, gas_table_2: data.gas_table_2 ? JSON.stringify(data.gas_table_2) : null, gas_table_3: data.gas_table_3 ? JSON.stringify(data.gas_table_3) : null, gas_table_4: data.gas_table_4 ? JSON.stringify(data.gas_table_4) : null, fuel_tables: data.fuel_tables ? JSON.stringify(data.fuel_tables) : null, updated_at: new Date().toISOString() };
   App.editingId = surveyId; survey.id = surveyId;
   const idx = App.surveys.findIndex(s => s.id === surveyId);
   if (idx > -1) App.surveys[idx] = { ...App.surveys[idx], ...survey }; else App.surveys.push(survey);
@@ -8304,7 +8534,7 @@ async function submitSurvey() {
   const surveyId = App.editingId || App.currentSurvey?.id;
   if (lsGetDeleted().includes(surveyId)) { toast('סקר זה נמחק ולא ניתן להגישו', 'error'); return; }
   const data = collectData();
-  const survey = { ...App.currentSurvey, ...data, status: 'submitted', sync_status: App.isOnline ? 'pending' : 'local', energy_sources: JSON.stringify(data.energy_sources), transformers: JSON.stringify(data.transformers), systems: JSON.stringify(data.systems), spaces: JSON.stringify(data.spaces || []), site_photos: JSON.stringify(data.site_photos || []), elec_table_1: data.elec_table_1 ? JSON.stringify(data.elec_table_1) : null, elec_table_2: data.elec_table_2 ? JSON.stringify(data.elec_table_2) : null, elec_table_3: data.elec_table_3 ? JSON.stringify(data.elec_table_3) : null, elec_calc_rows: data.elec_calc_rows ? JSON.stringify(data.elec_calc_rows) : null, gas_table_1: data.gas_table_1 ? JSON.stringify(data.gas_table_1) : null, gas_table_2: data.gas_table_2 ? JSON.stringify(data.gas_table_2) : null, gas_table_3: data.gas_table_3 ? JSON.stringify(data.gas_table_3) : null, gas_table_4: data.gas_table_4 ? JSON.stringify(data.gas_table_4) : null, fuel_tables: data.fuel_tables ? JSON.stringify(data.fuel_tables) : null, updated_at: new Date().toISOString() };
+  const survey = { ...App.currentSurvey, ...data, status: 'submitted', sync_status: App.isOnline ? 'pending' : 'local', energy_sources: JSON.stringify(data.energy_sources), transformers: JSON.stringify(data.transformers), systems: JSON.stringify(data.systems), spaces: JSON.stringify(data.spaces || []), site_photos: JSON.stringify(data.site_photos || []), elec_table_1: data.elec_table_1 ? JSON.stringify(data.elec_table_1) : null, elec_table_2: data.elec_table_2 ? JSON.stringify(data.elec_table_2) : null, elec_table_3: data.elec_table_3 ? JSON.stringify(data.elec_table_3) : null, elec_table_4: data.elec_table_4 ? JSON.stringify(data.elec_table_4) : null, elec_calc_rows: data.elec_calc_rows ? JSON.stringify(data.elec_calc_rows) : null, gas_table_1: data.gas_table_1 ? JSON.stringify(data.gas_table_1) : null, gas_table_2: data.gas_table_2 ? JSON.stringify(data.gas_table_2) : null, gas_table_3: data.gas_table_3 ? JSON.stringify(data.gas_table_3) : null, gas_table_4: data.gas_table_4 ? JSON.stringify(data.gas_table_4) : null, fuel_tables: data.fuel_tables ? JSON.stringify(data.fuel_tables) : null, updated_at: new Date().toISOString() };
   survey.id = surveyId;
   const idx = App.surveys.findIndex(s => s.id === surveyId);
   if (idx > -1) App.surveys[idx] = { ...App.surveys[idx], ...survey }; else App.surveys.push(survey);
@@ -8968,7 +9198,7 @@ function renderDetailView(s) {
         <h4><i class="fas fa-plug"></i> תשתית חשמל</h4>
         ${dRow('ספק', s.electricity_supplier)} ${dRow('מתח', VOLTAGE_LABELS[s.voltage_level] || '—')}
         ${dRow('שנאים', s.transformers_count || 0)} ${dRow('ייצור חשמל', s.has_on_site_generation ? 'כן' : 'לא')}
-        ${(function(){ const et1 = parseField(s.elec_table_1, null); const et2 = parseField(s.elec_table_2, null); const et3 = parseField(s.elec_table_3, null); return (et1||et2||et3) ? '<h4 style="margin-top:12px;font-size:13px;color:var(--text-secondary);"><i class="fas fa-table"></i> טבלאות צריכת חשמל</h4>' + (et1 ? dRow('טבלה 1', buildElecTableSummaryText(et1,'טבלה 1')) : '') + (et2 ? dRow('טבלה 2', buildElecTableSummaryText(et2,'טבלה 2')) : '') + (et3 ? dRow('טבלה 3', buildElecTableSummaryText(et3,'טבלה 3')) : '') : ''; })()}
+        ${(function(){ const et1 = parseField(s.elec_table_1, null); const et2 = parseField(s.elec_table_2, null); const et3 = parseField(s.elec_table_3, null); const et4 = parseField(s.elec_table_4, null); return (et1||et2||et3||et4) ? '<h4 style="margin-top:12px;font-size:13px;color:var(--text-secondary);"><i class="fas fa-table"></i> טבלאות צריכת חשמל</h4>' + (et1 ? dRow('טבלה 1', buildElecTableSummaryText(et1,'טבלה 1')) : '') + (et2 ? dRow('טבלה 2', buildElecTableSummaryText(et2,'טבלה 2')) : '') + (et3 ? dRow('טבלה 3', buildElecTableSummaryText(et3,'טבלה 3')) : '') + (et4 ? dRow('טבלה 4', buildElecTableSummaryText(et4,'טבלה 4')) : '') : ''; })()}
         ${transformers.length > 0 ? '<h4 style="margin-top:12px;font-size:13px;color:var(--text-secondary);">פרטי שנאים</h4>' + transformers.map(t => dRow(t.name || '—', fmtNum(t.capacity) + ' kVA' + (t.load ? ' | ' + t.load + '%' : ''))).join('') : ''}
         <h4 style="margin-top:12px;font-size:13px;color:var(--text-secondary);"><i class="fas fa-fire"></i> מקורות אנרגיה</h4>
         ${activeEnergy.length === 0 ? '<div style="color:var(--text-hint)">לא הוזנו</div>' : activeEnergy.map(e => { const t = ENERGY_TYPES.find(x => x.key === e.type); return dRow((t?.label || e.type), fmtNum(e.quantity) + ' ' + (e.unit || '') + (e.cost ? ' | ₪' + fmtNum(e.cost) : '')); }).join('')}
@@ -9707,11 +9937,12 @@ function exportSurveyPDF(s) {
   const et1 = parseField(s.elec_table_1, null);
   const et2 = parseField(s.elec_table_2, null);
   const et3 = parseField(s.elec_table_3, null);
-  const elecTotalKwh = [et1, et2, et3].reduce((acc, et) => {
+  const et4 = parseField(s.elec_table_4, null);
+  const elecTotalKwh = [et1, et2, et3, et4].reduce((acc, et) => {
     if (!et || !et.rows) return acc;
     return acc + et.rows.reduce((s2, r) => s2 + (parseFloat(r.peak_kw)||0) + (parseFloat(r.low_kw)||0), 0);
   }, 0);
-  const elecTotalNis = [et1, et2, et3].reduce((acc, et) => {
+  const elecTotalNis = [et1, et2, et3, et4].reduce((acc, et) => {
     if (!et || !et.rows) return acc;
     return acc + et.rows.reduce((s2, r) => s2 + (parseFloat(r.peak_nis)||0) + (parseFloat(r.low_nis)||0), 0);
   }, 0);
@@ -9790,6 +10021,8 @@ function exportSurveyPDF(s) {
 
       ${et1 ? buildElecTable(et1, 'טבלת חשמל — ראשונה') : ''}
       ${et2 ? buildElecTable(et2, 'טבלת חשמל — שנייה') : ''}
+      ${et3 ? buildElecTable(et3, 'טבלת חשמל — שלישית') : ''}
+      ${et4 ? buildElecTable(et4, 'טבלת חשמל — רביעית') : ''}
       ${et3 ? buildElecTable(et3, 'טבלת חשמל — שלישית') : ''}
 
       ${activeEnergy.length > 0 ? secHead('🔥','מקורות אנרגיה פעילים') +
@@ -10019,6 +10252,7 @@ function exportSurveyWord(s) {
   const et1 = parseField(s.elec_table_1, null);
   const et2 = parseField(s.elec_table_2, null);
   const et3 = parseField(s.elec_table_3, null);
+  const et4 = parseField(s.elec_table_4, null);
   function buildWordElecTable(data, label) {
     if (!data || !data.rows) return '';
     let sum={peak_kw:0,peak_nis:0,low_kw:0,low_nis:0};
@@ -10038,7 +10272,7 @@ function exportSurveyWord(s) {
       <tr style="background:#1a1f36;color:#fff;font-weight:bold;text-align:center;"><td style="padding:4px;border:1px solid #333;">סה"כ</td><td style="padding:4px;border:1px solid #333;">${Math.round(sum.peak_kw)}</td><td style="padding:4px;border:1px solid #333;">${Math.round(sum.peak_nis)}</td><td style="padding:4px;border:1px solid #333;">${Math.round(sum.low_kw)}</td><td style="padding:4px;border:1px solid #333;">${Math.round(sum.low_nis)}</td><td style="padding:4px;border:1px solid #333;">${Math.round(totKw)}</td><td style="padding:4px;border:1px solid #333;">${Math.round(totNis)}</td></tr>
     </table>`;
   }
-  const elecTablesWordHtml = (et1 ? buildWordElecTable(et1,'טבלת צריכת חשמל — טבלה ראשונה') : '') + (et2 ? buildWordElecTable(et2,'טבלת צריכת חשמל — טבלה שנייה') : '') + (et3 ? buildWordElecTable(et3,'טבלת צריכת חשמל — טבלה שלישית') : '');
+  const elecTablesWordHtml = (et1 ? buildWordElecTable(et1,'טבלת צריכת חשמל — טבלה ראשונה') : '') + (et2 ? buildWordElecTable(et2,'טבלת צריכת חשמל — טבלה שנייה') : '') + (et3 ? buildWordElecTable(et3,'טבלת צריכת חשמל — טבלה שלישית') : '') + (et4 ? buildWordElecTable(et4,'טבלת צריכת חשמל — טבלה רביעית') : '');
 
   const page2plus = `
     <div style="page-break-before:always;"></div>
@@ -10193,8 +10427,8 @@ function exportSurveyWord(s) {
 
     ${(function() {
       // ── סיכום כולל ──
-      const elecKwh = [et1,et2,et3].reduce((a,et)=>{ if(!et||!et.rows) return a; return a+et.rows.reduce((b,r)=>b+(parseFloat(r.peak_kw)||0)+(parseFloat(r.low_kw)||0),0);},0);
-      const elecNis = [et1,et2,et3].reduce((a,et)=>{ if(!et||!et.rows) return a; return a+et.rows.reduce((b,r)=>b+(parseFloat(r.peak_nis)||0)+(parseFloat(r.low_nis)||0),0);},0);
+      const elecKwh = [et1,et2,et3,et4].reduce((a,et)=>{ if(!et||!et.rows) return a; return a+et.rows.reduce((b,r)=>b+(parseFloat(r.peak_kw)||0)+(parseFloat(r.low_kw)||0),0);},0);
+      const elecNis = [et1,et2,et3,et4].reduce((a,et)=>{ if(!et||!et.rows) return a; return a+et.rows.reduce((b,r)=>b+(parseFloat(r.peak_nis)||0)+(parseFloat(r.low_nis)||0),0);},0);
       const gasQ  = gasTables.reduce((a,gt)=>{ if(!gt||!gt.rows) return a; return a+gt.rows.reduce((b,r)=>b+(parseFloat(r.qty||r.quantity)||0),0);},0);
       const gasNis = gasTables.reduce((a,gt)=>{ if(!gt||!gt.rows) return a; return a+gt.rows.reduce((b,r)=>b+(parseFloat(r.cost)||0),0);},0);
       return sectionHead('📊','סיכום צריכת אנרגיה שנתית') +
@@ -11340,9 +11574,15 @@ document.addEventListener('DOMContentLoaded', () => {
   deLoadSettings();
 });
 
-// ══════════════════════════════════════════════
-// בקרות אנרגיה ודוחות — שמירה וטעינה מ-Firebase
-// ══════════════════════════════════════════════
+function openAnnualReport() {
+  window.open('energyreport.html', '_blank');
+}
+
+function openControlPanel() {
+  window.open('energysurvay.html', '_blank');
+}
+
+
 
 async function loadControlsList() {
   const container = document.getElementById('controls-list-container');
@@ -11579,7 +11819,6 @@ async function deleteReport(id) {
     } catch(e) { toast('שגיאה במחיקה', 'error'); }
   });
 }
-
 </script>
 </body>
 </html>
