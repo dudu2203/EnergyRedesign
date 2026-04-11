@@ -385,6 +385,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#66bb6a;box-sh
 <button class="submit-btn" id="submit_btn" onclick="submitForm()">שלח דיווח ← (PDF + Excel יורדים אוטומטית)</button>
 <button class="wa-btn" onclick="sendWhatsapp()">📲 שלח לווטסאפ של דניאל</button>
 <button class="wa-btn" id="save-report-btn" onclick="saveReport()" style="background:#1a73e8;margin-top:8px;">💾 שמור דוח במערכת</button>
+<button class="wa-btn" id="word-report-btn" onclick="exportReportWord()" style="background:#2e7d32;margin-top:8px;">📄 ייצא Word</button>
 <div class="status st-send" id="st_sending">⏳ מעבד ושולח... אנא המתן</div>
 <div class="status st-ok" id="st_success">✅ הדיווח נשלח בהצלחה! PDF ו-Excel הורדו למחשב שלך.</div>
 <div class="status st-err" id="st_error"></div>
@@ -941,6 +942,83 @@ async function saveReport() {
     alert('✅ הדוח נטען לעריכה');
   } catch(e) { alert('שגיאה בטעינה: ' + e.message); }
 })();
+
+
+function exportReportWord() {
+  var btn = document.getElementById('word-report-btn');
+  btn.textContent = '⏳ מייצר...'; btn.disabled = true;
+  try {
+    var d = D();
+    var row = function(k,v){ return !v?'':'<tr><td style="background:#e8f0fe;font-weight:bold;padding:6px 10px;border:1px solid #c5cae9;width:35%;font-size:10pt;">'+k+'</td><td style="padding:6px 10px;border:1px solid #c5cae9;font-size:10pt;">'+String(v)+'</td></tr>'; };
+    var sec = function(t){ return '<h3 style="color:#1a237e;border-bottom:2px solid #1a237e;padding-bottom:4px;margin:18px 0 8px;font-size:12pt;">'+t+'</h3>'; };
+    var tbl = function(rows){ return rows?'<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">'+rows+'</table>':''; };
+    var fuelRows =
+      row('מזוט כבד (ק"ג)',d.f_mazot_k)+row('מזוט קל (ל)',d.f_mazot_kv)+row('סילוני (ט)',d.f_jet)+
+      row('סולר אתר (ל)',d.f_solar_s)+row('קרוסין (ל)',d.f_kerosene)+row('בנזין (ל)',d.f_benzin)+
+      row('גפ"מ (ק"ג)',d.f_gpm)+row('גז טבעי (MMBTU)',d.f_gas)+row('פחם (ט)',d.f_coal)+
+      row('נפתא (ט)',d.f_nafta)+row('פטקוק (ט)',d.f_petcoke)+row('ביטומן (ט)',d.f_bitumen)+
+      row('ביוגז בוצה (מ"ק)',d.f_biogas1)+row('ביוגז מטמנות (מ"ק)',d.f_biogas2)+row('אחר',d.f_other);
+    var carRows =
+      row('בנזין — כמות רכבים',d.benz_count)+row('בנזין — ק"מ',d.benz_km)+row('בנזין — ליטר',d.benz_liter)+
+      row('סולר — כמות',d.solar_count)+row('סולר — ק"מ',d.solar_km)+row('סולר — ליטר',d.solar_liter)+
+      row('גפ"מ — כמות',d.gpm_count)+row('גפ"מ — ק"מ',d.gpm_km)+row('גפ"מ — ק"ג',d.gpm_kg)+
+      row('גז טבעי — כמות',d.natgas_count)+row('גז טבעי — ק"מ',d.natgas_km)+row('גז טבעי — MMBTU',d.natgas_mmbtu)+
+      row('חשמלי — כמות',d.ev_count)+row('חשמלי — ק"מ',d.ev_km)+row('חשמלי — kWh',d.ev_kwh)+row('עמדות טעינה',d.chargers)+
+      row('צמ"ה — סה"כ',d.fork_total)+row('צמ"ה חשמלי',d.fork_elec)+row('צמ"ה סולר (ל)',d.hev_solar)+row('צמ"ה חשמל (kWh)',d.hev_kwh)+
+      row('סה"כ רכבים',d.cars_total)+row('סה"כ ק"מ',d.km_total)+row('CO₂ רכבים (טון)',d.cars_co2);
+    var muniRows =
+      row('סה"כ חשמל (kWh)',d.muni_total_kwh)+row('CO₂ (טון)',d.muni_co2)+row('ספקים',d.muni_suppliers)+
+      row('תאורת חוץ (kWh)',d.muni_lighting_kwh)+row('פנסים',d.muni_lamps)+
+      row('חינוך (kWh)',d.muni_edu_kwh)+row('תלמידים',d.muni_students_total)+row('שטח חינוך (מ"ר)',d.muni_students_area)+
+      row('רכבי דלק',d.muni_fuel_cars)+row('רכבי חשמל',d.muni_ev_cars)+
+      row('סולר (ל)',d.muni_diesel)+row('בנזין (ל)',d.muni_gasoline)+row('גפ"מ (ק"ג)',d.muni_lpg)+
+      row('עמדות ציבוריות',d.muni_charge_public)+row('kWh טעינה',d.muni_charge_kwh)+
+      row('עמדות AC',d.muni_ac_stations)+row('שקעי AC',d.muni_ac_sockets)+row('עמדות DC',d.muni_dc_stations)+row('עמדות Ultra',d.muni_ultra_stations)+
+      row('PV (kWp)',d.muni_pv_kw)+row('PV (kWh)',d.muni_pv_kwh)+row('רוח (kW)',d.muni_wind_kw);
+    var html = [
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">',
+      '<head><meta charset="utf-8"><title>דוח אנרגיה שנתי</title>',
+      '<style>body{font-family:Arial,sans-serif;direction:rtl;font-size:10pt;}table{width:100%;border-collapse:collapse;}@page{margin:2cm;}</style>',
+      '</head><body dir="rtl">',
+      '<div style="background:#1a1f36;color:white;padding:20px;text-align:center;margin-bottom:20px;">',
+      '<h1 style="margin:0;color:white;font-size:16pt;">⚡ דוח אנרגיה שנתי — NRG Redesign</h1>',
+      '<div style="font-size:13pt;margin-top:6px;">'+d.company+'</div>',
+      '<div style="font-size:10pt;margin-top:4px;opacity:.85;">שנה: '+d.year+'</div></div>',
+      sec('1. פרטי הלקוח'),
+      tbl(row('שם חברה',d.company)+row('איש קשר',d.contact)+row('ת.ז/ח.פ',d.teudat)+
+          row('חברת ייעוץ',d.consulting)+row('טלפון',d.phone)+row('דוא"ל',d.email)+
+          row('שנה',d.year)+row('מגזר',d.sector)+row('סוג מבנה',d.building_type)+
+          row('שטח בנוי (מ"ר)',d.total_area)+row('שטח ממוזג (מ"ר)',d.cooled_area)),
+      sec('2. נתוני חשמל — אתר'),
+      tbl(row('פסגה (kWh)',d.elec_peak)+row('שפל (kWh)',d.elec_off)+row('שאינה תעו"ז (kWh)',d.elec_flat)+
+          row('סה"כ חשמל (kWh)',d.elec_total)+row('פליטות CO₂ (טון)',d.elec_co2)+
+          row('חשמל ירוק (kWh)',d.green_kwh)+row('ספקים',d.suppliers)),
+      sec('3. אנרגיה מתחדשת'),
+      tbl(row('PV מותקן (kW)',d.pv_kw)+row('יצור PV (kWh)',d.pv_kwh)+row('נמכר לרשת (kWh)',d.pv_sold)+
+          row('ביוגז (kW)',d.biogas_kw)+row('ביוגז (kWh)',d.biogas_kwh)+row('ביוגז נמכר',d.biogas_sold)+
+          row('אגירה',d.storage)+row('ייצור אחר',d.other_gen)),
+      sec('4. דלקים וחומרי אנרגיה — אתר'),
+      tbl(fuelRows),
+      row('הסעדה',d.catering)||row('כביסה',d.laundry) ? sec('5. שירותים')+tbl(row('הסעדה',d.catering)+row('כביסה',d.laundry)) : '',
+      row('תפוקה',d.output_qty) ? sec('6. תפוקה ויעילות')+tbl(row('יחידת תפוקה',d.output_unit)+row('כמות',d.output_qty)+row('התייעלות',d.efficiency)+row('פירוט',d.eff_text)) : '',
+      sec('7. כלי רכב'),
+      tbl(carRows),
+      muniRows ? sec('8. רשות מקומית')+tbl(muniRows) : '',
+      d.notes ? sec('9. הערות')+('<p style="font-size:10pt;">'+d.notes.split('\n').join('<br>')+'</p>') : '',
+      '<div style="margin-top:40px;border-top:1px solid #ccc;padding-top:10px;font-size:9pt;color:#666;">',
+      d.contact+' | '+d.phone+' | '+d.email,
+      '</div></body></html>'
+    ].join('');
+    var blob = new Blob(['﻿'+html],{type:'application/msword;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'דוח_אנרגיה_'+(d.company||'ללא_שם').replace(/\s+/g,'_')+'_'+d.year+'.doc';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+    alert('✅ קובץ Word הורד בהצלחה');
+  } catch(e) { alert('שגיאה: '+e.message); }
+  btn.textContent = '📄 ייצא Word'; btn.disabled = false;
+}
 
 </script>
 </body>

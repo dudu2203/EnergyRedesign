@@ -486,6 +486,7 @@
 <div class="action-bar">
   <button class="btn btn-primary" id="save-meeting-btn" onclick="saveMeeting()" style="background:#2d7a3a;">💾 שמור סיכום</button>
   <button class="btn btn-primary" onclick="exportMeetingPDF()" style="background:#1a1a1a;">📄 ייצא PDF</button>
+  <button class="btn btn-primary" id="word-meeting-btn" onclick="exportMeetingWord()" style="background:#2e7d32;">📝 ייצא Word</button>
 </div>
 
 <script>
@@ -980,6 +981,56 @@ function exportMeetingPDF() {
     showToast('✅ הסיכום נטען לעריכה');
   } catch(e) { showToast('שגיאה בטעינה: ' + e.message); }
 })();
+
+
+function exportMeetingWord() {
+  var btn = document.getElementById('word-meeting-btn');
+  btn.textContent = '⏳ מייצר...'; btn.disabled = true;
+  try {
+    var d = getFormData();
+    var row = function(k,v){ return !v?'':'<tr><td style="background:#f3e5f5;font-weight:bold;padding:6px 10px;border:1px solid #ce93d8;width:35%;font-size:10pt;">'+k+'</td><td style="padding:6px 10px;border:1px solid #ce93d8;font-size:10pt;">'+String(v).replace(/</g,'&lt;')+'</td></tr>'; };
+    var sec = function(t){ return '<h3 style="color:#6a1b9a;border-bottom:2px solid #6a1b9a;padding-bottom:4px;margin:18px 0 8px;font-size:12pt;">'+t+'</h3>'; };
+    var tbl = function(rows){ return '<table style="width:100%;border-collapse:collapse;margin-bottom:12px;">'+rows+'</table>'; };
+    var listHTML = function(items, fn) {
+      if (!items||!items.length) return '<p style="color:#999;font-size:10pt;">—</p>';
+      return items.map(function(it,i){ return '<div style="margin-bottom:6px;padding:6px 10px;background:#f8f9fa;border-right:3px solid #6a1b9a;font-size:10pt;">'+(i+1)+'. '+fn(it)+'</div>'; }).join('');
+    };
+    var meetDate = d.meetingDate ? d.meetingDate.split('-').reverse().join('/') : '';
+    var html = [
+      '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">',
+      '<head><meta charset="utf-8"><title>סיכום פגישה</title>',
+      '<style>body{font-family:Arial,sans-serif;direction:rtl;font-size:10pt;}table{border-collapse:collapse;width:100%;}@page{margin:2cm;}</style>',
+      '</head><body dir="rtl">',
+      '<div style="background:#4a148c;color:white;padding:20px;text-align:center;margin-bottom:20px;">',
+      '<h1 style="margin:0;color:white;font-size:16pt;">🤝 סיכום פגישה — ממונה אנרגיה</h1>',
+      '<div style="font-size:13pt;margin-top:6px;">'+String(d.clientName||'')+'</div>',
+      '<div style="font-size:10pt;margin-top:4px;opacity:.85;">תאריך: '+meetDate+(d.meetingTime?' | שעה: '+d.meetingTime:'')+'</div>',
+      '</div>',
+      sec('פרטי הפגישה'),
+      tbl(row('לקוח',d.clientName)+row('איש קשר',d.contactName)+row('כתובת',d.address)+
+          row('תאריך',meetDate)+row('שעה',d.meetingTime)+row('סוג ביקור',d.visitType)),
+      d.visitBackground ? sec('רקע לביקור')+'<p style="font-size:10pt;">'+String(d.visitBackground).split('\n').join('<br>')+'</p>' : '',
+      d.findings&&d.findings.length ? sec('ממצאי סיור')+listHTML(d.findings,function(f){ return '['+String(f.priority||'')+'] '+String(f.text||''); }) : '',
+      d.fieldFindings&&d.fieldFindings.length ? sec('ממצאי שטח')+listHTML(d.fieldFindings,function(f){ return String(f.location||'')+' — '+String(f.desc||'')+(f.priority?' ['+f.priority+']':''); }) : '',
+      d.recs&&d.recs.length ? sec('המלצות')+listHTML(d.recs,function(r){ return String(r.text||'')+(r.term?' ('+r.term+')':''); }) : '',
+      d.timeline&&d.timeline.length ? sec('תכנית פעולה')+'<table style="width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:12px;"><tr style="background:#f3e5f5;"><th style="padding:5px 8px;border:1px solid #ce93d8;text-align:right;">פעולה</th><th style="padding:5px 8px;border:1px solid #ce93d8;">יעד</th><th style="padding:5px 8px;border:1px solid #ce93d8;">אחראי</th></tr>'+d.timeline.map(function(t){ return '<tr><td style="padding:5px 8px;border:1px solid #e1bee7;">'+String(t.desc||'')+'</td><td style="padding:5px 8px;border:1px solid #e1bee7;text-align:center;">'+String(t.deadline||'')+'</td><td style="padding:5px 8px;border:1px solid #e1bee7;">'+String(t.responsible||'')+'</td></tr>'; }).join('')+'</table>' : '',
+      d.requests&&d.requests.length ? sec('בקשות ומעקב')+'<table style="width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:12px;"><tr style="background:#f3e5f5;"><th style="padding:5px 8px;border:1px solid #ce93d8;text-align:right;">בקשה</th><th style="padding:5px 8px;border:1px solid #ce93d8;">סטטוס</th></tr>'+d.requests.map(function(r){ return '<tr><td style="padding:5px 8px;border:1px solid #e1bee7;">'+String(r.text||'')+'</td><td style="padding:5px 8px;border:1px solid #e1bee7;text-align:center;">'+String(r.status||'')+'</td></tr>'; }).join('')+'</table>' : '',
+      d.generalSummary ? sec('סיכום כללי')+'<p style="font-size:10pt;">'+String(d.generalSummary).split('\n').join('<br>')+'</p>' : '',
+      d.nextMeeting||d.nextTopic ? sec('פגישה הבאה')+tbl(row('תאריך מתוכנן',d.nextMeeting)+row('נושאים',d.nextTopic)) : '',
+      '<div style="margin-top:40px;border-top:1px solid #ccc;padding-top:10px;font-size:9pt;color:#666;">',
+      String(d.author||'')+' | '+String(d.authorRole||'')+' | '+String(d.authorPhone||'')+' | '+String(d.authorEmail||''),
+      '</div></body></html>'
+    ].join('');
+    var blob = new Blob(['﻿'+html],{type:'application/msword;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'סיכום_פגישה_'+(d.clientName||'ללא_שם').replace(/\s+/g,'_')+'.doc';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); },1000);
+    showToast('קובץ Word הורד ✓');
+  } catch(e) { showToast('שגיאה: '+e.message); }
+  btn.textContent = '📝 ייצא Word'; btn.disabled = false;
+}
 
 </script>
 </body>

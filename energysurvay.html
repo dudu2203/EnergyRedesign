@@ -470,113 +470,115 @@ function exportPDF() {
 
 function exportWord() {
   var btn = document.getElementById('wbtn');
-  btn.textContent = '⏳ מייצר...';
-  btn.disabled = true;
-
-  var data = {
-    factory: v('factory_name'), company: v('company_name'), companyId: v('company_id'),
-    contactName: v('contact_name'), contactRole: v('contact_role'),
-    contactPhone: v('contact_phone'), contactEmail: v('contact_email'),
-    location: v('location'), employees: v('employees'),
-    facilityDesc: v('facility_desc'),
-    areaTotal: v('area_total'), areaRoofed: v('area_roofed'), areaAC: v('area_ac'),
-    factoryDays: days('fa_'), factoryHours: v('factory_hours'),
-    officeDays: days('of_'), officeHours: v('office_hours'),
-    consumers: getConsumers(),
-    curLines: energyLines('cur'), prevLines: energyLines('prev'),
-    curYear: CUR_YEAR, prevYear: PREV_YEAR,
-    notes: v('extra_notes'), dateStr: getDateStr()
-  };
-
+  btn.textContent = '⏳ מייצר...'; btn.disabled = true;
   try {
+    var data = {
+      factory: v('factory_name'), company: v('company_name'), companyId: v('company_id'),
+      contactName: v('contact_name'), contactRole: v('contact_role'),
+      contactPhone: getPhone('contact_phone_prefix','contact_phone'),
+      contactEmail: v('contact_email'), location: v('location'), employees: v('employees'),
+      facilityDesc: v('facility_desc'),
+      areaTotal: v('area_total'), areaRoofed: v('area_roofed'), areaAC: v('area_ac'),
+      factoryDays: days('fa_'), factoryHours: v('factory_hours'),
+      officeDays: days('of_'), officeHours: v('office_hours'),
+      consumers: getConsumers(),
+      curLines: energyLines('cur'), prevLines: energyLines('prev'),
+      curYear: CUR_YEAR, prevYear: PREV_YEAR,
+      notes: v('extra_notes'), dateStr: getDateStr()
+    };
     var html = buildWordHTML(data);
-    var blob = new Blob(['\uFEFF' + html], { type: 'application/msword;charset=utf-8' });
+    var blob = new Blob(['\uFEFF' + html], {type:'application/msword;charset=utf-8'});
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    a.download = 'סקר_אנרגיה_' + (data.factory || 'ללא_שם') + '.doc';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function() { document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
-    showToast('המסמך הורד בהצלחה', 'ok');
-  } catch(e) {
-    showToast('שגיאה: ' + e.message, 'err');
-  }
-
-  btn.textContent = '📄 ייצא Word';
-  btn.disabled = false;
+    a.download = 'בקרת_אנרגיה_' + (data.factory||'ללא_שם').replace(/\s+/g,'_') + '.doc';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    showToast('קובץ Word הורד בהצלחה', 'ok');
+  } catch(e) { showToast('שגיאה: ' + e.message, 'err'); }
+  btn.textContent = '📄 ייצא Word'; btn.disabled = false;
 }
 
 function buildWordHTML(d) {
+  var h = function(tag, text, style) { return '<'+tag+(style?' style="'+style+'"':'')+'>'+text+'</'+tag+'>'; };
   var row = function(k, v) {
-    return '<tr><td style="background:#e8f5ec;font-weight:bold;padding:5px 10px;border:1px solid #c8ddd0;width:35%;">' + k + '</td>' +
-           '<td style="padding:5px 10px;border:1px solid #c8ddd0;">' + (v || '—') + '</td></tr>';
+    if (!v) return '';
+    return '<tr><td style="background:#e8f5ec;font-weight:bold;padding:6px 10px;border:1px solid #c8ddd0;width:35%;font-size:11pt;">'+k+'</td>'+
+           '<td style="padding:6px 10px;border:1px solid #c8ddd0;font-size:11pt;">'+String(v).replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</td></tr>';
   };
-  var sec = function(title) {
-    return '<h3 style="color:#2d7d46;border-bottom:2px solid #2d7d46;padding-bottom:4px;margin:20px 0 10px;font-family:Arial;">' + title + '</h3>';
+  var sec = function(title, color) {
+    color = color||'#2d7d46';
+    return '<h3 style="color:'+color+';border-bottom:2.5px solid '+color+';padding-bottom:5px;margin:20px 0 10px;font-size:13pt;">'+title+'</h3>';
   };
+  var tbl = function(rows) { return '<table style="width:100%;border-collapse:collapse;margin-bottom:14px;">'+rows+'</table>'; };
 
-  var consumersHTML = '';
-  d.consumers.forEach(function(c) {
-    consumersHTML += '<p style="font-weight:bold;margin:10px 0 4px;">' + esc(c.name) + '</p>';
-    consumersHTML += '<table style="width:100%;border-collapse:collapse;font-size:11pt;">';
-    consumersHTML += '<tr style="background:#e8f5ec;"><th style="padding:4px 8px;border:1px solid #c8ddd0;">פרט</th><th style="padding:4px 8px;border:1px solid #c8ddd0;">כמות</th><th style="padding:4px 8px;border:1px solid #c8ddd0;">kW</th></tr>';
-    c.rows.forEach(function(r) {
-      consumersHTML += '<tr><td style="padding:4px 8px;border:1px solid #ddd;">' + esc(r.desc) + '</td>' +
-        '<td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">' + esc(r.qty) + '</td>' +
-        '<td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">' + esc(r.kw) + '</td></tr>';
+  // Consumers table
+  var consHTML = '';
+  (d.consumers||[]).forEach(function(c) {
+    consHTML += '<p style="font-weight:bold;margin:10px 0 4px;font-size:12pt;">' + String(c.name||'')+'</p>';
+    consHTML += '<table style="width:100%;border-collapse:collapse;font-size:10pt;margin-bottom:10px;">';
+    consHTML += '<tr style="background:#e8f5ec;"><th style="padding:5px 8px;border:1px solid #c8ddd0;text-align:right;">פרט/דגם</th>'+
+                '<th style="padding:5px 8px;border:1px solid #c8ddd0;text-align:center;">כמות</th>'+
+                '<th style="padding:5px 8px;border:1px solid #c8ddd0;text-align:center;">kW</th></tr>';
+    (c.rows||[]).forEach(function(r) {
+      consHTML += '<tr><td style="padding:5px 8px;border:1px solid #ddd;">'+String(r.desc||'')+'</td>'+
+        '<td style="padding:5px 8px;border:1px solid #ddd;text-align:center;">'+String(r.qty||'')+'</td>'+
+        '<td style="padding:5px 8px;border:1px solid #ddd;text-align:center;">'+String(r.kw||'')+'</td></tr>';
     });
-    consumersHTML += '</table>';
+    consHTML += '</table>';
   });
 
-  var energyTable = function(lines, year) {
-    if (!lines || !lines.length) return '<p style="color:#999;">לא הוזנו נתונים</p>';
-    var t = '<table style="width:60%;border-collapse:collapse;font-size:11pt;">';
-    t += '<tr style="background:#e8f5ec;"><th style="padding:4px 8px;border:1px solid #c8ddd0;">מקור</th><th style="padding:4px 8px;border:1px solid #c8ddd0;">כמות</th><th style="padding:4px 8px;border:1px solid #c8ddd0;">יחידה</th></tr>';
+  // Energy lines table
+  var energyTbl = function(lines, year) {
+    if (!lines||!lines.length) return '<p style="color:#999;font-size:10pt;">לא הוזנו נתונים</p>';
+    var t = '<table style="width:80%;border-collapse:collapse;font-size:10pt;margin-bottom:10px;">';
+    t += '<tr style="background:#e8f5ec;"><th style="padding:5px 8px;border:1px solid #c8ddd0;text-align:right;">מקור</th>'+
+         '<th style="padding:5px 8px;border:1px solid #c8ddd0;text-align:center;">כמות</th>'+
+         '<th style="padding:5px 8px;border:1px solid #c8ddd0;text-align:right;">יחידה</th></tr>';
     lines.forEach(function(l) {
-      t += '<tr><td style="padding:4px 8px;border:1px solid #ddd;">' + esc(l.type) + '</td>' +
-        '<td style="padding:4px 8px;border:1px solid #ddd;text-align:center;">' + esc(l.qty) + '</td>' +
-        '<td style="padding:4px 8px;border:1px solid #ddd;">' + esc(l.unit) + '</td></tr>';
+      t += '<tr><td style="padding:5px 8px;border:1px solid #ddd;">'+String(l.type||'')+'</td>'+
+           '<td style="padding:5px 8px;border:1px solid #ddd;text-align:center;">'+String(l.qty||'')+'</td>'+
+           '<td style="padding:5px 8px;border:1px solid #ddd;">'+String(l.unit||'')+'</td></tr>';
     });
-    t += '</table>';
-    return t;
+    return t + '</table>';
   };
 
-  return '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">' +
-    '<head><meta charset="utf-8"><title>סקר אנרגיה</title>' +
-    '<style>body{font-family:Arial,sans-serif;direction:rtl;margin:2cm;}table{width:100%;border-collapse:collapse;}@page{margin:2cm;}</style>' +
-    '</head><body dir="rtl">' +
-    '<div style="text-align:center;background:#1a2e22;color:white;padding:20px;margin-bottom:20px;">' +
-    '<h1 style="margin:0;font-size:22pt;">⚡ בקרת אנרגיה — NRG Redesign</h1>' +
-    '<div style="font-size:14pt;margin-top:6px;">' + esc(d.factory || '—') + '</div>' +
-    (d.dateStr ? '<div style="font-size:10pt;margin-top:6px;opacity:.8;">תאריך: ' + d.dateStr + '</div>' : '') +
-    '</div>' +
-    sec('1. פרטי החברה ואחראי האנרגיה') +
-    '<table style="border-collapse:collapse;font-size:11pt;">' +
-    row('שם המפעל', d.factory) + row('שם החברה', d.company) + row('ח.פ', d.companyId) +
-    row('אחראי אנרגיה', d.contactName) + row('תפקיד', d.contactRole) +
-    row('נייד', d.contactPhone) + row('אי-מייל', d.contactEmail) +
-    row('מיקום', d.location) + row('עובדים', d.employees) +
-    '</table>' +
-    sec('2. מבנה המתקן ושעות פעילות') +
-    '<table style="border-collapse:collapse;font-size:11pt;">' +
-    row('תיאור', d.facilityDesc) +
-    row('שטח כולל', d.areaTotal ? d.areaTotal + ' מ"ר' : '') +
-    row('שטח מקורה', d.areaRoofed ? d.areaRoofed + ' מ"ר' : '') +
-    row('שטח ממוזג', d.areaAC ? d.areaAC + ' מ"ר' : '') +
-    row('ימי מפעל', d.factoryDays) + row('שעות מפעל', d.factoryHours) +
-    row('ימי משרד', d.officeDays) + row('שעות משרד', d.officeHours) +
-    '</table>' +
-    (d.consumers.length > 0 ? sec('3. צרכני אנרגיה עיקריים') + consumersHTML : '') +
-    sec('4. צריכת אנרגיה שנתית') +
-    '<p style="font-weight:bold;">שנה נוכחית (' + d.curYear + '):</p>' + energyTable(d.curLines) +
-    '<p style="font-weight:bold;margin-top:14px;">שנה קודמת (' + d.prevYear + '):</p>' + energyTable(d.prevLines) +
-    (d.notes ? sec('5. הערות נוספות') + '<p>' + esc(d.notes) + '</p>' : '') +
-    '<div style="margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:10pt;color:#666;">' +
-    'חתימת ממונה אנרגיה: ___________________ &nbsp;&nbsp; תאריך: ___________________' +
-    '</div>' +
-    '</body></html>';
+  return [
+    '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">',
+    '<head><meta charset="utf-8"><title>בקרת אנרגיה</title>',
+    '<style>body{font-family:Arial,sans-serif;direction:rtl;margin:0;font-size:11pt;}',
+    'table{width:100%;border-collapse:collapse;} @page{margin:2cm;}</style>',
+    '</head><body dir="rtl">',
+    '<div style="background:#1a2e22;color:white;padding:20px;margin-bottom:20px;text-align:center;">',
+    '<h1 style="margin:0;color:white;font-size:18pt;">⚡ בקרת אנרגיה — NRG Redesign</h1>',
+    '<div style="font-size:14pt;margin-top:8px;">'+String(d.factory||'')+'</div>',
+    d.dateStr ? '<div style="font-size:10pt;margin-top:4px;opacity:.85;">תאריך: '+d.dateStr+'</div>' : '',
+    '</div>',
+    sec('1. פרטי החברה ואחראי האנרגיה'),
+    tbl(row('שם המפעל',d.factory)+row('שם החברה',d.company)+row('ח.פ',d.companyId)+
+        row('אחראי אנרגיה',d.contactName)+row('תפקיד',d.contactRole)+
+        row('טלפון',d.contactPhone)+row('אי-מייל',d.contactEmail)+
+        row('מיקום',d.location)+row('עובדים',d.employees)),
+    sec('2. מבנה המתקן ושעות פעילות'),
+    tbl(row('תיאור המתקן',d.facilityDesc)+
+        row('שטח כולל',d.areaTotal?(d.areaTotal+' מ"ר'):'')+
+        row('שטח מקורה',d.areaRoofed?(d.areaRoofed+' מ"ר'):'')+
+        row('שטח ממוזג',d.areaAC?(d.areaAC+' מ"ר'):'')+
+        row('ימי פעילות — מפעל',d.factoryDays)+row('שעות מפעל',d.factoryHours)+
+        row('ימי פעילות — משרד',d.officeDays)+row('שעות משרד',d.officeHours)),
+    d.consumers&&d.consumers.length ? sec('3. צרכני אנרגיה עיקריים')+consHTML : '',
+    sec('4. צריכת אנרגיה שנתית'),
+    '<p style="font-weight:bold;font-size:11pt;">שנה נוכחית ('+d.curYear+'):</p>',
+    energyTbl(d.curLines),
+    '<p style="font-weight:bold;font-size:11pt;margin-top:12px;">שנה קודמת ('+d.prevYear+'):</p>',
+    energyTbl(d.prevLines),
+    d.notes ? sec('5. הערות נוספות')+'<p style="font-size:11pt;">'+String(d.notes).replace(/\n/g,'<br>')+'</p>' : '',
+    '<div style="margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:10pt;color:#666;">',
+    'חתימת ממונה אנרגיה: ___________________ &nbsp;&nbsp;&nbsp; תאריך: ___________________',
+    '</div></body></html>'
+  ].join('');
 }
+
 
 // ── Init ──
 document.querySelectorAll('input,textarea,select').forEach(function(el) {
