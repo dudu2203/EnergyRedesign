@@ -1623,7 +1623,16 @@ input[type="color"].de-color-input {
   }
   .nav-item { min-height: 48px; }
 }
-  </style>
+  
+/* ── Speech-to-text ── */
+.mic-btn { background:none; border:1.5px solid #d1d5db; border-radius:6px; padding:3px 6px; cursor:pointer; font-size:14px; line-height:1; color:#6b7280; transition:all .2s; flex-shrink:0; display:inline-flex; align-items:center; }
+.mic-btn:hover { border-color:#2d7d46; color:#2d7d46; background:#f0fdf4; }
+.mic-btn.listening { border-color:#dc2626; color:#dc2626; background:#fef2f2; animation:mic-pulse 1s infinite; }
+@keyframes mic-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.field-with-mic { display:flex; gap:5px; align-items:flex-start; }
+.field-with-mic input, .field-with-mic textarea { flex:1; }
+
+</style>
 </head>
 <body>
 
@@ -12394,6 +12403,63 @@ async function exportMeetingFromList(id) {
     _printViaIframe(html);
   } catch(e) { toast('שגיאה: ' + e.message, 'error'); }
 }
+
+
+// ── Speech-to-text ──
+var _micActive = null;
+function startMic(inputId) {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('הדפדפן שלך לא תומך בזיהוי קול. נסה Chrome.'); return; }
+  var btn = document.querySelector('[data-mic="' + inputId + '"]');
+  var field = document.getElementById(inputId);
+  if (!field) return;
+  if (_micActive && _micActive.inputId === inputId) { _micActive.rec.stop(); return; }
+  if (_micActive) { try { _micActive.rec.stop(); } catch(e){} }
+  var rec = new SR();
+  rec.lang = 'he-IL'; rec.continuous = true; rec.interimResults = false;
+  rec.onstart = function() { _micActive={rec:rec,inputId:inputId}; if(btn){btn.classList.add('listening');btn.title='לחץ לעצירה';} };
+  rec.onresult = function(e) {
+    var t=''; for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)t+=e.results[i][0].transcript;}
+    if(t){var cur=field.value; field.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+t; field.dispatchEvent(new Event('input', {bubbles:true}));}
+  };
+  rec.onerror = function(e){if(e.error!=='aborted')console.warn('Speech:',e.error);};
+  rec.onend = function(){_micActive=null;if(btn){btn.classList.remove('listening');btn.title='לחץ לדיבור';}};
+  rec.start();
+}
+
+
+// ── Auto-attach mic buttons to all text fields ──
+function attachMicButtons(root) {
+  var root = root || document;
+  root.querySelectorAll('input[type="text"],input[type="email"],input:not([type]),textarea').forEach(function(el) {
+    if (!el.id || el.dataset.micAttached) return;
+    el.dataset.micAttached = '1';
+    // Don't add mic to very short fields (e.g. numbers, phones) or search fields
+    if (el.type === 'number' || el.type === 'tel' || el.type === 'password') return;
+    if (el.closest('.field-with-mic')) return;
+    // Wrap
+    var wrapper = document.createElement('div');
+    wrapper.className = 'field-with-mic';
+    el.parentNode.insertBefore(wrapper, el);
+    wrapper.appendChild(el);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mic-btn';
+    btn.dataset.mic = el.id;
+    btn.title = 'לחץ לדיבור';
+    btn.textContent = '🎤';
+    btn.onclick = function() { startMic(el.id); };
+    wrapper.appendChild(btn);
+  });
+}
+// Run on load and watch for dynamic content
+document.addEventListener('DOMContentLoaded', function() { attachMicButtons(); });
+var _micObs = new MutationObserver(function(muts) {
+  muts.forEach(function(m) {
+    m.addedNodes.forEach(function(n) { if(n.nodeType===1) attachMicButtons(n); });
+  });
+});
+_micObs.observe(document.body, {childList:true, subtree:true});
 
 </script>
 </body>

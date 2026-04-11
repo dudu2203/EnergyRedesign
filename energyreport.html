@@ -50,6 +50,14 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#66bb6a;box-sh
 .st-err{background:#ffebee;border:1px solid #ef9a9a;color:#b71c1c}
 .wa-btn{width:100%;padding:13px;background:#25d366;color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;font-family:'Heebo',sans-serif;margin-top:8px;transition:background 0.15s}
 .wa-btn:hover{background:#128c4e}
+
+/* ── Speech-to-text ── */
+.mic-btn { background:none; border:1.5px solid #d1d5db; border-radius:6px; padding:3px 6px; cursor:pointer; font-size:14px; line-height:1; color:#6b7280; transition:all .2s; flex-shrink:0; display:inline-flex; align-items:center; }
+.mic-btn:hover { border-color:#2d7d46; color:#2d7d46; background:#f0fdf4; }
+.mic-btn.listening { border-color:#dc2626; color:#dc2626; background:#fef2f2; animation:mic-pulse 1s infinite; }
+@keyframes mic-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.field-with-mic { display:flex; gap:5px; align-items:flex-start; }
+.field-with-mic input, .field-with-mic textarea { flex:1; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -216,7 +224,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#66bb6a;box-sh
     </div>
     <div id="eff_detail" style="display:none;margin-top:10px">
       <label>פירוט הפרויקטים</label>
-      <textarea id="eff_text" rows="3" placeholder="תאר את הפרויקטים שבוצעו..."></textarea>
+      <div class="field-with-mic"><textarea id="eff_text" rows="3" placeholder="תאר את הפרויקטים שבוצעו..."></textarea><button type="button" class="mic-btn" data-mic="eff_text" onclick="startMic('eff_text')" title="לחץ לדיבור">🎤</button></div>
     </div>
   </div>
 
@@ -378,7 +386,7 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:#66bb6a;box-sh
 <!-- הערות והצהרה -->
 <div class="card">
   <div class="card-title"><span class="accent"></span>הצהרה והערות</div>
-  <div><label>הערות לדיווח</label><textarea id="notes" rows="3" placeholder="הערות נוספות, נימוק לחריגה וכד'..."></textarea></div>
+  <div><label>הערות לדיווח</label><div class="field-with-mic"><textarea id="notes" rows="3" placeholder="הערות נוספות, נימוק לחריגה וכד'..."></textarea><button type="button" class="mic-btn" data-mic="notes" onclick="startMic('notes')" title="לחץ לדיבור">🎤</button></div></div>
   <p class="hint" style="margin-top:8px">אני מצהיר/ה כי דיווח זה הינו אמת ואני מודע/ת לכך כי משרד האנרגיה רשאי לבדוק את הנתונים ולבקש אסמכתאות לנכונותם.</p>
 </div>
 
@@ -1019,6 +1027,29 @@ function exportReportWord() {
     alert('✅ קובץ Word הורד בהצלחה');
   } catch(e) { alert('שגיאה: '+e.message); }
   btn.textContent = '📄 ייצא Word'; btn.disabled = false;
+}
+
+
+// ── Speech-to-text ──
+var _micActive = null;
+function startMic(inputId) {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('הדפדפן שלך לא תומך בזיהוי קול. נסה Chrome.'); return; }
+  var btn = document.querySelector('[data-mic="' + inputId + '"]');
+  var field = document.getElementById(inputId);
+  if (!field) return;
+  if (_micActive && _micActive.inputId === inputId) { _micActive.rec.stop(); return; }
+  if (_micActive) { try { _micActive.rec.stop(); } catch(e){} }
+  var rec = new SR();
+  rec.lang = 'he-IL'; rec.continuous = true; rec.interimResults = false;
+  rec.onstart = function() { _micActive={rec:rec,inputId:inputId}; if(btn){btn.classList.add('listening');btn.title='לחץ לעצירה';} };
+  rec.onresult = function(e) {
+    var t=''; for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)t+=e.results[i][0].transcript;}
+    if(t){var cur=field.value; field.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+t; field.dispatchEvent(new Event('input'));}
+  };
+  rec.onerror = function(e){if(e.error!=='aborted')console.warn('Speech:',e.error);};
+  rec.onend = function(){_micActive=null;if(btn){btn.classList.remove('listening');btn.title='לחץ לדיבור';}};
+  rec.start();
 }
 
 </script>

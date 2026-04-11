@@ -84,6 +84,28 @@ textarea{min-height:70px;resize:vertical;}
 }
 .phead{display:none;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:2px solid var(--green);margin-bottom:16px;}
 .psig{display:none;margin-top:40px;border-top:1px solid #ccc;padding-top:12px;font-size:12px;color:var(--gray);}
+
+/* ── Speech-to-text ── */
+.mic-btn {
+  background: none;
+  border: 1.5px solid #d1d5db;
+  border-radius: 6px;
+  padding: 3px 6px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  color: #6b7280;
+  transition: all .2s;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+}
+.mic-btn:hover { border-color: #2d7d46; color: #2d7d46; background: #f0fdf4; }
+.mic-btn.listening { border-color: #dc2626; color: #dc2626; background: #fef2f2; animation: mic-pulse 1s infinite; }
+@keyframes mic-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.field-with-mic { display: flex; gap: 5px; align-items: flex-start; }
+.field-with-mic input,
+.field-with-mic textarea { flex: 1; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -123,14 +145,14 @@ textarea{min-height:70px;resize:vertical;}
     <div class="cb open" id="b-s1">
       <div class="ib">⚠️ שדות המסומנים ב־* נדרשים לייצוא</div>
       <div class="fg">
-        <div class="fgf"><label>שם המפעל <span class="req">*</span></label><input type="text" id="factory_name" placeholder="שם המפעל / האתר"></div>
-        <div class="fgf"><label>שם החברה <span class="req">*</span></label><input type="text" id="company_name" placeholder="שם החברה"></div>
-        <div class="fgf"><label>ח.פ</label><input type="text" id="company_id" placeholder="מספר חברה"></div>
-        <div class="fgf"><label>שם ומשפחה – אחראי אנרגיה <span class="req">*</span></label><input type="text" id="contact_name" placeholder="שם מלא"></div>
-        <div class="fgf"><label>תפקיד</label><input type="text" id="contact_role" placeholder="תפקיד"></div>
+        <div class="fgf"><label>שם המפעל <span class="req">*</span></label><div class="field-with-mic"><input type="text" id="factory_name" placeholder="שם המפעל / האתר"><button type="button" class="mic-btn" data-mic="factory_name" onclick="startMic('factory_name')" title="לחץ לדיבור">🎤</button></div></div>
+        <div class="fgf"><label>שם החברה <span class="req">*</span></label><div class="field-with-mic"><input type="text" id="company_name" placeholder="שם החברה"><button type="button" class="mic-btn" data-mic="company_name" onclick="startMic('company_name')" title="לחץ לדיבור">🎤</button></div></div>
+        <div class="fgf"><label>ח.פ</label><div class="field-with-mic"><input type="text" id="company_id" placeholder="מספר חברה"><button type="button" class="mic-btn" data-mic="company_id" onclick="startMic('company_id')" title="לחץ לדיבור">🎤</button></div></div>
+        <div class="fgf"><label>שם ומשפחה – אחראי אנרגיה <span class="req">*</span></label><div class="field-with-mic"><input type="text" id="contact_name" placeholder="שם מלא"><button type="button" class="mic-btn" data-mic="contact_name" onclick="startMic('contact_name')" title="לחץ לדיבור">🎤</button></div></div>
+        <div class="fgf"><label>תפקיד</label><div class="field-with-mic"><input type="text" id="contact_role" placeholder="תפקיד"><button type="button" class="mic-btn" data-mic="contact_role" onclick="startMic('contact_role')" title="לחץ לדיבור">🎤</button></div></div>
         <div class="fgf"><label>נייד</label><input type="tel" id="contact_phone" placeholder="05X-XXXXXXX"></div>
-        <div class="fgf"><label>אי-מייל</label><input type="email" id="contact_email" placeholder="name@example.com"></div>
-        <div class="fgf"><label>מיקום</label><input type="text" id="location" placeholder="עיר / אזור"></div>
+        <div class="fgf"><label>אי-מייל</label><div class="field-with-mic"><input type="email" id="contact_email" placeholder="name@example.com"><button type="button" class="mic-btn" data-mic="contact_email" onclick="startMic('contact_email')" title="לחץ לדיבור">🎤</button></div></div>
+        <div class="fgf"><label>מיקום</label><div class="field-with-mic"><input type="text" id="location" placeholder="עיר / אזור"><button type="button" class="mic-btn" data-mic="location" onclick="startMic('location')" title="לחץ לדיבור">🎤</button></div></div>
         <div class="fgf"><label>כמות עובדים</label><input type="number" id="employees" placeholder="מספר"></div>
       </div>
     </div>
@@ -145,7 +167,7 @@ textarea{min-height:70px;resize:vertical;}
     </div>
     <div class="cb" id="b-s2">
       <div class="fg">
-        <div class="fgf full"><label>תיאור מבנה המתקן</label><textarea id="facility_desc" placeholder="תיאור כללי..."></textarea></div>
+        <div class="fgf full"><label>תיאור מבנה המתקן</label><div class="field-with-mic"><textarea id="facility_desc" placeholder="תיאור כללי..."></textarea><button type="button" class="mic-btn" data-mic="facility_desc" onclick="startMic('facility_desc')" title="לחץ לדיבור">🎤</button></div></div>
         <div class="fgf"><label>שטח כולל (מ"ר)</label><input type="number" id="area_total" placeholder="מ״ר"></div>
         <div class="fgf"><label>שטח מקורה (מ"ר)</label><input type="number" id="area_roofed" placeholder="מ״ר"></div>
         <div class="fgf"><label>שטח ממוזג (מ"ר)</label><input type="number" id="area_ac" placeholder="מ״ר"></div>
@@ -282,7 +304,7 @@ textarea{min-height:70px;resize:vertical;}
       <div class="cg" id="t-s5">▼</div>
     </div>
     <div class="cb" id="b-s5">
-      <div class="fgf"><label>מידע נוסף</label><textarea id="extra_notes" rows="4" placeholder="הערות..."></textarea></div>
+      <div class="fgf"><label>מידע נוסף</label><div class="field-with-mic"><textarea id="extra_notes" rows="4" placeholder="הערות..."></textarea><button type="button" class="mic-btn" data-mic="extra_notes" onclick="startMic('extra_notes')" title="לחץ לדיבור">🎤</button></div></div>
     </div>
   </div>
 
@@ -699,6 +721,51 @@ function buildWordHTML(d) {
   return html;
 }
 
+
+// ── Speech-to-text (Web Speech API) ──
+var _micActive = null;
+function startMic(inputId) {
+  var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    alert('הדפדפן שלך לא תומך בזיהוי קול. נסה Chrome.');
+    return;
+  }
+  var btn = document.querySelector('[data-mic="' + inputId + '"]');
+  var field = document.getElementById(inputId);
+  if (!field) return;
+  if (_micActive && _micActive.inputId === inputId) {
+    _micActive.rec.stop();
+    return;
+  }
+  if (_micActive) { try { _micActive.rec.stop(); } catch(e){} }
+  var rec = new SpeechRecognition();
+  rec.lang = 'he-IL';
+  rec.continuous = true;
+  rec.interimResults = false;
+  rec.onstart = function() {
+    _micActive = { rec: rec, inputId: inputId };
+    if (btn) btn.classList.add('listening');
+    if (btn) btn.title = 'לחץ לעצירה';
+  };
+  rec.onresult = function(e) {
+    var transcript = '';
+    for (var i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) transcript += e.results[i][0].transcript;
+    }
+    if (transcript) {
+      var cur = field.value;
+      field.value = cur + (cur && !cur.endsWith(' ') ? ' ' : '') + transcript;
+      field.dispatchEvent(new Event('input'));
+    }
+  };
+  rec.onerror = function(e) { if (e.error !== 'aborted') console.warn('Speech error:', e.error); };
+  rec.onend = function() {
+    _micActive = null;
+    if (btn) btn.classList.remove('listening');
+    if (btn) btn.title = 'לחץ לדיבור';
+  };
+  rec.start();
+}
 
 </script>
 </body>

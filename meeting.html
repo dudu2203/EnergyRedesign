@@ -299,6 +299,14 @@
     .action-bar { flex-wrap: wrap; padding: 12px 16px; }
     .header-title { display: none; }
   }
+
+/* ── Speech-to-text ── */
+.mic-btn { background:none; border:1.5px solid #d1d5db; border-radius:6px; padding:3px 6px; cursor:pointer; font-size:14px; line-height:1; color:#6b7280; transition:all .2s; flex-shrink:0; display:inline-flex; align-items:center; }
+.mic-btn:hover { border-color:#2d7d46; color:#2d7d46; background:#f0fdf4; }
+.mic-btn.listening { border-color:#dc2626; color:#dc2626; background:#fef2f2; animation:mic-pulse 1s infinite; }
+@keyframes mic-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+.field-with-mic { display:flex; gap:5px; align-items:flex-start; }
+.field-with-mic input, .field-with-mic textarea { flex:1; }
 </style>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
@@ -337,11 +345,11 @@
       <div class="form-grid">
         <div class="form-group">
           <label>שם לקוח / חברה</label>
-          <input type="text" id="client-name" placeholder="לדוגמה: MSD, א.י. כהן פלסט">
+          <div class="field-with-mic"><input type="text" id="client-name" placeholder="לדוגמה: MSD, א.י. כהן פלסט"><button type="button" class="mic-btn" data-mic="client-name" onclick="startMic('client-name')" title="לחץ לדיבור">🎤</button></div>
         </div>
         <div class="form-group">
           <label>שם איש קשר</label>
-          <input type="text" id="contact-name" placeholder="שם מלא">
+          <div class="field-with-mic"><input type="text" id="contact-name" placeholder="שם מלא"><button type="button" class="mic-btn" data-mic="contact-name" onclick="startMic('contact-name')" title="לחץ לדיבור">🎤</button></div>
         </div>
         <div class="form-group">
           <label>תאריך הפגישה</label>
@@ -353,7 +361,7 @@
         </div>
         <div class="form-group">
           <label>כתובת / מבנה</label>
-          <input type="text" id="address" placeholder="כתובת מלאה">
+          <div class="field-with-mic"><input type="text" id="address" placeholder="כתובת מלאה"><button type="button" class="mic-btn" data-mic="address" onclick="startMic('address')" title="לחץ לדיבור">🎤</button></div>
         </div>
         <div class="form-group">
           <label>סוג ביקור</label>
@@ -369,7 +377,7 @@
         </div>
         <div class="form-group full">
           <label>רקע והסבר הביקור</label>
-          <textarea id="visit-background" placeholder="תיאור קצר של מטרת הביקור והרקע..."></textarea>
+          <div class="field-with-mic"><textarea id="visit-background" placeholder="תיאור קצר של מטרת הביקור והרקע..."></textarea><button type="button" class="mic-btn" data-mic="visit-background" onclick="startMic('visit-background')" title="לחץ לדיבור">🎤</button></div>
         </div>
       </div>
     </div>
@@ -447,7 +455,7 @@
     <div class="section-body">
       <div class="form-group" style="margin-bottom:16px;">
         <label>סיכום והערות נוספות</label>
-        <textarea id="general-summary" placeholder="סיכום הפגישה, מסקנות כלליות..." style="min-height:100px;"></textarea>
+        <div class="field-with-mic"><textarea id="general-summary" placeholder="סיכום הפגישה, מסקנות כלליות..." style="min-height:100px;"></textarea><button type="button" class="mic-btn" data-mic="general-summary" onclick="startMic('general-summary')" title="לחץ לדיבור">🎤</button></div>
       </div>
       <div class="form-grid">
         <div class="form-group">
@@ -456,22 +464,22 @@
         </div>
         <div class="form-group">
           <label>פגישה הבאה – נושא</label>
-          <input type="text" id="next-topic" placeholder="נושא הפגישה הבאה">
+          <div class="field-with-mic"><input type="text" id="next-topic" placeholder="נושא הפגישה הבאה"><button type="button" class="mic-btn" data-mic="next-topic" onclick="startMic('next-topic')" title="לחץ לדיבור">🎤</button></div>
         </div>
       </div>
     </div>
     <div class="meta-bar">
       <div class="form-group">
         <label>מבצע הדו"ח</label>
-        <input type="text" id="author" value="דניאל קליינהנדלר">
+        <div class="field-with-mic"><input type="text" id="author" value="דניאל קליינהנדלר"><button type="button" class="mic-btn" data-mic="author" onclick="startMic('author')" title="לחץ לדיבור">🎤</button></div>
       </div>
       <div class="form-group">
         <label>תפקיד</label>
-        <input type="text" id="author-role" value="סוקר וממונה אנרגיה">
+        <div class="field-with-mic"><input type="text" id="author-role" value="סוקר וממונה אנרגיה"><button type="button" class="mic-btn" data-mic="author-role" onclick="startMic('author-role')" title="לחץ לדיבור">🎤</button></div>
       </div>
       <div class="form-group">
         <label>טלפון</label>
-        <input type="text" id="author-phone" value="0524847723">
+        <div class="field-with-mic"><input type="text" id="author-phone" value="0524847723"><button type="button" class="mic-btn" data-mic="author-phone" onclick="startMic('author-phone')" title="לחץ לדיבור">🎤</button></div>
       </div>
       <div class="form-group">
         <label>מייל</label>
@@ -1033,6 +1041,29 @@ function exportMeetingWord() {
     showToast('קובץ Word הורד ✓');
   } catch(e) { showToast('שגיאה: '+e.message); }
   btn.textContent = '📝 ייצא Word'; btn.disabled = false;
+}
+
+
+// ── Speech-to-text ──
+var _micActive = null;
+function startMic(inputId) {
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) { alert('הדפדפן שלך לא תומך בזיהוי קול. נסה Chrome.'); return; }
+  var btn = document.querySelector('[data-mic="' + inputId + '"]');
+  var field = document.getElementById(inputId);
+  if (!field) return;
+  if (_micActive && _micActive.inputId === inputId) { _micActive.rec.stop(); return; }
+  if (_micActive) { try { _micActive.rec.stop(); } catch(e){} }
+  var rec = new SR();
+  rec.lang = 'he-IL'; rec.continuous = true; rec.interimResults = false;
+  rec.onstart = function() { _micActive={rec:rec,inputId:inputId}; if(btn){btn.classList.add('listening');btn.title='לחץ לעצירה';} };
+  rec.onresult = function(e) {
+    var t=''; for(var i=e.resultIndex;i<e.results.length;i++){if(e.results[i].isFinal)t+=e.results[i][0].transcript;}
+    if(t){var cur=field.value; field.value=cur+(cur&&!cur.endsWith(' ')?' ':'')+t; field.dispatchEvent(new Event('input'));}
+  };
+  rec.onerror = function(e){if(e.error!=='aborted')console.warn('Speech:',e.error);};
+  rec.onend = function(){_micActive=null;if(btn){btn.classList.remove('listening');btn.title='לחץ לדיבור';}};
+  rec.start();
 }
 
 </script>
