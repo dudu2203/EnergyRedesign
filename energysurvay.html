@@ -133,6 +133,28 @@ textarea{min-height:70px;resize:vertical;}
   <div class="pl" id="plab">0%</div>
 </div>
 
+<script>
+// ── Early toggle — must be defined before section HTML ──
+function tog(id) {
+  var b = document.getElementById('b-' + id);
+  var t = document.getElementById('t-' + id);
+  if (!b || !t) return;
+  if (b.classList.contains('open')) {
+    b.classList.remove('open');
+    t.classList.remove('open');
+  } else {
+    b.classList.add('open');
+    t.classList.add('open');
+  }
+}
+function tf(id) { document.getElementById(id).classList.toggle('show'); }
+function switchYear(y) {
+  ['cur','prev'].forEach(function(k) {
+    document.getElementById('yr-'+k).classList.toggle('active', k===y);
+    document.getElementById('yb-'+k).classList.toggle('active', k===y);
+  });
+}
+</script>
 <div class="wrap">
 
   <!-- סעיף 1 -->
