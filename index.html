@@ -2315,13 +2315,23 @@ input[type="color"].de-color-input {
                            style="display:none;" onchange="handlePhotoUpload(this,'site')" />
                   </div>
 
-                  <!-- Satellite map -->
+                  <!-- Satellite map (auto) -->
                   <button type="button" class="photo-upload-area photo-upload-compact photo-map-btn"
                           id="btn-add-satellite" title="הוסף תצלום לוויין מגוגל מפות">
                     <i class="fas fa-satellite"></i>
                     <div class="photo-upload-text">תצלום לוויין</div>
                     <div class="photo-upload-hint">מיקום נוכחי</div>
                   </button>
+                  <!-- Satellite upload (manual) -->
+                  <div class="photo-upload-area photo-upload-compact"
+                       onclick="document.getElementById('satellite-upload-input').click()"
+                       title="העלה תצלום לוויין מהמחשב" style="border-color:#8b5cf6;color:#7c3aed;">
+                    <i class="fas fa-cloud-upload-alt" style="color:#7c3aed;"></i>
+                    <div class="photo-upload-text" style="color:#7c3aed;">העלה לוויין</div>
+                    <div class="photo-upload-hint">מהמחשב</div>
+                    <input type="file" id="satellite-upload-input" accept="image/*"
+                           style="display:none;" onchange="handleSatelliteUpload(this)" />
+                  </div>
                 </div>
 
                 <!-- Satellite preview (shown while loading / confirming) -->
@@ -2377,13 +2387,16 @@ input[type="color"].de-color-input {
               <div class="fg2">
                 <div class="form-group req">
                   <label>ספק חשמל</label>
-                  <select id="f-elec-supplier">
+                  <select id="f-elec-supplier" onchange="toggleSupplierOther(this.value)">
                     <option value="">בחר ספק...</option>
                     <option value="חברת החשמל">חברת החשמל</option>
                     <option value="קצא">קצא (Ketz)</option>
                     <option value="אנרג'יאן">אנרג'יאן</option>
                     <option value="אחר">אחר</option>
                   </select>
+                  <input type="text" id="f-elec-supplier-other" placeholder="שם הספק..."
+                         style="display:none;margin-top:6px;width:100%;box-sizing:border-box;"
+                         oninput="scheduleAutosave()" maxlength="100" />
                   <span class="field-error"></span>
                 </div>
                 <div class="form-group req">
@@ -2459,6 +2472,7 @@ input[type="color"].de-color-input {
                     <label><i class="fas fa-calendar-alt"></i> שנה:</label>
                     <select class="elec-year-select" id="elec-year-1" onchange="elecYearChanged(1)"></select>
                     <span style="font-size:12px;color:var(--primary);font-weight:500;">(טבלה ראשונה)</span>
+                    <button type="button" onclick="clearElecTable(1)" title="נקה טבלה ראשונה" style="margin-right:auto;background:none;border:1px solid #ef4444;border-radius:6px;padding:2px 8px;font-size:11px;color:#ef4444;cursor:pointer;"><i class="fas fa-trash-alt"></i> נקה</button>
                   </div>
                   <div class="elec-table-wrap">
                     <table class="elec-table" id="elec-table-1">
@@ -2485,6 +2499,7 @@ input[type="color"].de-color-input {
                     <label><i class="fas fa-calendar-alt"></i> שנה:</label>
                     <select class="elec-year-select" id="elec-year-2" onchange="elecYearChanged(2)"></select>
                     <span style="font-size:12px;color:var(--primary);font-weight:500;">(טבלה שנייה)</span>
+                    <button type="button" onclick="clearElecTable(2)" title="נקה טבלה שנייה" style="margin-right:auto;background:none;border:1px solid #ef4444;border-radius:6px;padding:2px 8px;font-size:11px;color:#ef4444;cursor:pointer;"><i class="fas fa-trash-alt"></i> נקה</button>
                   </div>
                   <div class="elec-table-wrap">
                     <table class="elec-table" id="elec-table-2">
@@ -2511,6 +2526,7 @@ input[type="color"].de-color-input {
                     <label><i class="fas fa-calendar-alt"></i> שנה:</label>
                     <select class="elec-year-select" id="elec-year-3" onchange="elecYearChanged(3)"></select>
                     <span style="font-size:12px;color:var(--primary);font-weight:500;">(טבלה שלישית)</span>
+                    <button type="button" onclick="clearElecTable(3)" title="נקה טבלה שלישית" style="margin-right:auto;background:none;border:1px solid #ef4444;border-radius:6px;padding:2px 8px;font-size:11px;color:#ef4444;cursor:pointer;"><i class="fas fa-trash-alt"></i> נקה</button>
                   </div>
                   <div class="elec-table-wrap">
                     <table class="elec-table" id="elec-table-3">
@@ -2536,6 +2552,7 @@ input[type="color"].de-color-input {
                     <label><i class="fas fa-calendar-alt"></i> שנה:</label>
                     <select class="elec-year-select" id="elec-year-4" onchange="elecYearChanged(4)"></select>
                     <span style="font-size:12px;color:var(--primary);font-weight:500;">(טבלה רביעית)</span>
+                    <button type="button" onclick="clearElecTable(4)" title="נקה טבלה רביעית" style="margin-right:auto;background:none;border:1px solid #ef4444;border-radius:6px;padding:2px 8px;font-size:11px;color:#ef4444;cursor:pointer;"><i class="fas fa-trash-alt"></i> נקה</button>
                   </div>
                   <div class="elec-table-wrap">
                     <table class="elec-table" id="elec-table-4">
@@ -3626,7 +3643,7 @@ input[type="color"].de-color-input {
   <div class="modal-box modal-lg">
     <div class="modal-hdr">
       <h3 id="system-modal-title">הוספת מערכת</h3>
-      <button class="modal-close-btn" id="system-modal-close"><i class="fas fa-times"></i></button>
+      <button class="modal-close-btn" id="system-modal-close" onclick="confirmCancelSystem()"><i class="fas fa-times"></i></button>
     </div>
     <div class="modal-body-scroll">
 
@@ -3694,21 +3711,55 @@ input[type="color"].de-color-input {
           <div class="form-group req">
             <label>טון קירור</label>
             <select id="ch-tons" onchange="chillerTonsChanged()">
-              <option value="">בחר...</option>
+              <option value="">בחר טון קירור...</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+              <option value="30">30</option>
+              <option value="40">40</option>
+              <option value="50">50</option>
+              <option value="60">60</option>
+              <option value="70">70</option>
+              <option value="80">80</option>
+              <option value="90">90</option>
               <option value="100">100</option>
+              <option value="110">110</option>
+              <option value="120">120</option>
+              <option value="130">130</option>
+              <option value="140">140</option>
               <option value="150">150</option>
+              <option value="160">160</option>
+              <option value="170">170</option>
+              <option value="180">180</option>
+              <option value="190">190</option>
               <option value="200">200</option>
+              <option value="210">210</option>
+              <option value="220">220</option>
+              <option value="230">230</option>
+              <option value="240">240</option>
               <option value="250">250</option>
+              <option value="260">260</option>
+              <option value="270">270</option>
+              <option value="280">280</option>
+              <option value="290">290</option>
               <option value="300">300</option>
+              <option value="310">310</option>
+              <option value="320">320</option>
+              <option value="330">330</option>
+              <option value="340">340</option>
               <option value="350">350</option>
-              <option value="__free__">אחר (הקלד)</option>
-            </select>
+              <option value="360">360</option>
+              <option value="370">370</option>
+              <option value="380">380</option>
+              <option value="390">390</option>
+              <option value="400">400</option>
+              <option value="__free__">אחר (הזן ידנית)</option>
+              </select>
             <input type="number" id="ch-tons-free" placeholder="טון קירור" min="0" step="0.1" style="display:none;margin-top:4px;" />
           </div>
           <div class="form-group req">
             <label>הספק חשמלי (kW)</label>
             <input type="number" id="ch-kw" placeholder="ממולא אוטומטי" min="0" step="0.1" style="background:var(--primary-light);" />
-            <span class="field-hint">ממולא אוטומטית לפי טון קירור</span>
+            <span class="field-hint">ממולא אוטומטית לפי טבלת טון קירור (10–400 TR)</span>
           </div>
           <div class="form-group req">
             <label>כמות יחידות</label>
@@ -3763,6 +3814,18 @@ input[type="color"].de-color-input {
       <div id="sys-form-cooling" class="sys-spec-form" style="display:none;">
         <div style="background:#e0f2f1;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;color:#00695c;font-weight:600;">
           <i class="fas fa-thermometer-half"></i> טופס מערכות קירור (מזגנים / מיזוג מרכזי)
+        </div>
+        <div class="fg3" style="margin-bottom:14px;">
+          <div class="form-group req">
+            <label>סוג מערכת הקירור</label>
+            <select id="cool-subtype" onchange="scheduleAutosave()">
+              <option value="">בחר סוג...</option>
+              <option value="מקררים">מקררים</option>
+              <option value="בריכת קרח">בריכת קרח</option>
+              <option value="מדחס קירור">מדחס קירור</option>
+              <option value="אחר">אחר</option>
+            </select>
+          </div>
         </div>
         <div class="fg3">
           <div class="form-group">
@@ -4153,7 +4216,7 @@ input[type="color"].de-color-input {
 
     </div>
     <div class="modal-ftr">
-      <button class="btn btn-outline" id="system-modal-cancel">ביטול</button>
+      <button class="btn btn-outline" id="system-modal-cancel" onclick="confirmCancelSystem()">ביטול</button>
       <button class="btn btn-primary" id="system-modal-save"><i class="fas fa-save"></i> שמור</button>
     </div>
   </div>
@@ -4990,6 +5053,9 @@ function openSystemModal(id) {
 
     } else if (sys.category === 'cooling') {
       setVal('cool-location', sp.location || '');
+      // load subtype (מקררים/בריכת קרח/מדחס קירור/אחר)
+      var coolSubSel = document.getElementById('cool-subtype');
+      if (coolSubSel) coolSubSel.value = sp.cool_subtype || '';
       const coolTypeSel  = document.getElementById('cool-type');
       const coolTypeFree = document.getElementById('cool-type-free');
       const stdCoolTypes = ['מפוצל','מיני מרכזי','מרכזי','VRF','מאוורר קירור','מערכת מים קרים'];
@@ -5070,6 +5136,7 @@ function _sysResetAllForms() {
   setVal('mo-hours-sel',''); setVal('mo-days-sel','');
   ['mo-type-free','mo-hours','mo-days'].forEach(id=>{const el=document.getElementById(id);if(el){el.style.display='none';el.value='';}});
   // reset cooling
+  var cst = document.getElementById('cool-subtype'); if (cst) cst.value = '';
   ['cool-location','cool-company','cool-year','cool-btu','cool-kw'].forEach(id=>setVal(id,''));
   setVal('cool-type',''); setVal('cool-hp',''); setVal('cool-units','1'); setVal('cool-replace',''); setVal('cool-load','0.7');
   setVal('cool-hours-sel',''); setVal('cool-days-sel','');
@@ -5094,7 +5161,7 @@ function getDefaultDays() {
 }
 
 // ══ מיפוי טון קירור ← הספק kW לצ'ילרים ══
-const CHILLER_TONS_KW = { '100':125, '150':188, '200':250, '250':313, '300':375, '350':438 };
+const CHILLER_TONS_KW = { '10':11.0, '20':22.0, '30':33.0, '40':44.0, '50':55.0, '60':65.9, '70':76.9, '80':87.9, '90':98.9, '100':109.9, '110':120.9, '120':131.9, '130':142.9, '140':153.9, '150':164.9, '160':175.9, '170':186.8, '180':197.8, '190':208.8, '200':219.8, '210':230.8, '220':241.8, '230':252.8, '240':263.8, '250':274.8, '260':285.8, '270':296.8, '280':307.7, '290':318.7, '300':329.7, '310':340.7, '320':351.7, '330':362.7, '340':373.7, '350':384.7, '360':395.7, '370':406.7, '380':417.6, '390':428.6, '400':439.6 };
 
 function chillerTonsChanged() {
   const sel  = document.getElementById('ch-tons');
@@ -5389,10 +5456,10 @@ function sysShowForm(cat) {
 }
 
 function bindSystemModal() {
-  document.getElementById('system-modal-close')?.addEventListener('click', closeSystemModal);
-  document.getElementById('system-modal-cancel')?.addEventListener('click', closeSystemModal);
+  // close btn handled by onclick attr
+  // cancel handled by onclick attr on button
   document.getElementById('system-modal-save')?.addEventListener('click', saveSystem);
-  document.getElementById('system-modal')?.addEventListener('click', (e) => { if (e.target === document.getElementById('system-modal')) closeSystemModal(); });
+  // Backdrop click disabled — modal closes only via Save or Cancel buttons
   ['sys-units', 'sys-power', 'sys-hours', 'sys-days', 'sys-load'].forEach(id => { document.getElementById(id)?.addEventListener('input', updateCalcPreview); });
   // spec forms — live calc
   ['ch-kw','ch-units','ch-hours','ch-days',
@@ -5539,6 +5606,7 @@ function saveSystem() {
       : coolHpSel;
     specData = {
       location     : document.getElementById('cool-location')?.value?.trim() || '',
+      cool_subtype : document.getElementById('cool-subtype')?.value || '',
       cooling_type : coolType === 'מלל חופשי' ? coolTypeFree : coolType,
       company      : document.getElementById('cool-company')?.value?.trim() || '',
       mfg_year     : document.getElementById('cool-year')?.value || '',
@@ -6835,7 +6903,7 @@ function renderSurveyCard(s) {
     <div class="survey-card" data-id="${s.id}">
       <div class="card-top">
         <div class="card-icon ${s.site_type || 'industry'}"><i class="fas ${s.site_type === 'office' ? 'fa-building' : 'fa-industry'}"></i></div>
-        <span class="card-status ${s.status || 'draft'}">${STATUS_LABELS[s.status] || 'טיוטה'}</span>
+        <span class="card-status ${s.status || 'draft'}">${STATUS_LABELS[s.status] || 'טיוטה'}</span>${s.survey_type==='multi' ? '<span style="background:#7c3aed;color:#fff;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600;margin-right:6px;"><i class="fas fa-layer-group"></i> '+((s.sites||[]).length+1)+' אתרים</span>' : ''}
       </div>
       <div class="card-name">${escHtml(s.site_name || '—')}</div>
       <div class="card-meta">
@@ -6855,10 +6923,24 @@ function renderSurveyCard(s) {
 }
 
 function openNewSurvey() {
+  // Show survey type selection first
+  document.getElementById('survey-type-modal').style.display = 'flex';
+}
+
+function _doOpenNewSurvey(surveyType, siteName) {
   App.editingId = null; App.currentSurvey = createEmptySurvey(); App.transformerRows = [];
+  // Set multi-site fields
+  App.currentSurvey.survey_type = surveyType || 'single';
+  App.currentSurvey.sites = [];
+  App.currentSurvey._currentSiteIndex = 0;
+  if (surveyType === 'multi' && siteName) {
+    App.currentSurvey.site_name = siteName;
+    setVal('f-site-name', siteName);
+  }
   initEnergySources(); populateFormFields(App.currentSurvey); renderTransformerRows();
   updateEnergyCardsUI(); goToStep(1); navigateTo('survey-form', 'סקר חדש');
-  setText('form-title', 'סקר חדש'); updateCompletion(); startAutosave();
+  setText('form-title', surveyType === 'multi' ? 'סקר חדש — ' + (siteName||'') : 'סקר חדש');
+  updateCompletion(); startAutosave();
   window.scrollTo(0, 0);
   if (typeof renderSystemsList === 'function') renderSystemsList();
   if (typeof loadSitePhotosToForm === 'function') loadSitePhotosToForm();
@@ -6886,6 +6968,9 @@ function openNewSurvey() {
 function openEditSurvey(id) {
   const s = App.surveys.find(x => x.id === id);
   if (!s) { toast('הסקר לא נמצא', 'error'); return; }
+  // Hide site tabs bar first
+  const tabsBar = document.getElementById('site-tabs-bar');
+  if (tabsBar) tabsBar.style.display = 'none';
   App.editingId = id; App.currentSurvey = deepClone(s);
   App.currentSurvey.systems = parseField(s.systems, []);
   App.currentSurvey.spaces  = parseField(s.spaces,  []);
@@ -6898,6 +6983,10 @@ function openEditSurvey(id) {
   populateFormFields(App.currentSurvey); renderTransformerRows(); updateEnergyCardsUI();
   goToStep(1); navigateTo('survey-form', 'עריכת סקר');
   setText('form-title', 'עריכת סקר: ' + (s.site_name || ''));
+  // Show site tabs for multi-site surveys
+  if (s.survey_type === 'multi' && (s.sites || []).length > 0) {
+    setTimeout(function() { openMultiSiteSurvey(s); }, 200);
+  };
   updateCompletion(); startAutosave(); window.scrollTo(0, 0);
   if (typeof loadSitePhotosToForm === 'function') setTimeout(loadSitePhotosToForm, 50);
   setTimeout(() => initElecTables(parseField(s.elec_table_1, null), parseField(s.elec_table_2, null), parseField(s.elec_table_3, null), parseField(s.elec_table_4, null)), 80);
@@ -8287,7 +8376,11 @@ function _parseUnifiedExcel(file) {
         return;
       }
 
-      if (sheetMap['elec']) results.elec = _importElecSheet(wb.Sheets[sheetMap['elec']]);
+      // ── Clear existing data before import (replace, not merge) ──
+      if (sheetMap['elec']) {
+        App._elecData = {};  // clear all electricity tables
+        results.elec = _importElecSheet(wb.Sheets[sheetMap['elec']]);
+      }
       if (sheetMap['fuel']) results.fuel = _importFuelSheet(wb.Sheets[sheetMap['fuel']]);
 
       // גז — פתח את הסקציה לפני הייבוא כדי ש-DOM יהיה זמין
@@ -8793,6 +8886,10 @@ function saveDraft(silent = false) {
   updateSyncUI(); // show pending state immediately
   if (!silent) { const ind = document.getElementById('autosave-indicator'); if (ind) { ind.innerHTML = '<i class="fas fa-check-circle" style="color:var(--secondary)"></i> נשמר'; setTimeout(() => { if (ind) ind.innerHTML = ''; }, 3000); } }
   if (App.isOnline) syncToServer(survey);
+  // ── Multi-site: prompt for next site after save ──
+  if (!silent && App.currentSurvey && App.currentSurvey.survey_type === 'multi') {
+    _promptNextSite();
+  }
 }
 
 async function submitSurvey() {
@@ -12701,6 +12798,412 @@ function startAutoBackup() {
   if (t) { _lastBackupTime = new Date(t); _updateBackupChip(); }
 })();
 
+
+
+// ── Fix 1: Handle manual satellite photo upload ──
+function handleSatelliteUpload(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    // Store as satellite_photo in survey
+    if (!App.currentSurvey) return;
+    App.currentSurvey.satellite_photo = dataUrl;
+    // Show in the satellite preview box
+    var wrap = document.getElementById('satellite-preview-wrap');
+    var img = document.getElementById('satellite-img');
+    if (wrap && img) {
+      img.src = dataUrl;
+      wrap.style.display = 'block';
+    }
+    scheduleAutosave();
+    toast('תצלום הלוויין הועלה', 'success');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+// ── Fix 2: Show/hide supplier "אחר" text field ──
+function toggleSupplierOther(val) {
+  var otherInput = document.getElementById('f-elec-supplier-other');
+  if (!otherInput) return;
+  if (val === 'אחר') {
+    otherInput.style.display = 'block';
+    otherInput.focus();
+  } else {
+    otherInput.style.display = 'none';
+    otherInput.value = '';
+  }
+}
+
+// ── Fix 3: Clear a single electricity table ──
+function clearElecTable(n) {
+  if (!App._elecData) return;
+  if (!confirm('למחוק את נתוני טבלת חשמל ' + n + '?')) return;
+  App._elecData[n] = { year: '', rows: Array.from({length:12}, function() { return {peak_kw:'',peak_nis:'',low_kw:'',low_nis:''}; }) };
+  var sel = document.getElementById('elec-year-' + n);
+  if (sel && sel.options.length > 0) sel.selectedIndex = 0;
+  if (typeof renderElecBody === 'function') renderElecBody(n);
+  if (typeof _afterElecDataChange === 'function') _afterElecDataChange();
+  scheduleAutosave();
+  toast('טבלת חשמל ' + n + ' נוקתה', 'success');
+}
+
+// ── Fix 4: Save/load cool-subtype in system data ──
+// Hooked into existing _sysResetAllForms and saveSystem via patch below
+
+// ── Fix 5: Confirm cancel for system modal ──
+function confirmCancelSystem() {
+  // Check if any data was entered in the open modal
+  var hasData = false;
+  var checkIds = ['sys-name', 'sys-units', 'sys-power', 'sys-hours', 'sys-days'];
+  checkIds.forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el && el.value && el.value.trim()) hasData = true;
+  });
+  if (hasData || editingSystemId) {
+    showConfirm(
+      'סגירת מערכת',
+      editingSystemId ? 'לסגור את עריכת המערכת ללא שמירה?' : 'לסגור ללא שמירה? הנתונים שהזנת יאבדו.',
+      function() { closeSystemModal(); }
+    );
+  } else {
+    closeSystemModal();
+  }
+}
+
+
+// ============================================================
+// ══ MULTI-SITE SURVEY SYSTEM ══
+// ============================================================
+
+// ── Step 1: User chooses survey type ──
+function chooseSurveyType(type) {
+  document.getElementById('survey-type-modal').style.display = 'none';
+  if (type === 'single') {
+    _doOpenNewSurvey('single', '');
+  } else {
+    // Show site name entry modal
+    var modal = document.getElementById('site-name-modal');
+    var title = document.getElementById('site-name-modal-title');
+    var sub   = document.getElementById('site-name-modal-sub');
+    var inp   = document.getElementById('site-name-modal-input');
+    var err   = document.getElementById('site-name-modal-err');
+    if (title) title.textContent = 'שם האתר הראשון';
+    if (sub)   sub.textContent   = 'הזן את שם האתר לפני תחילת מילוי הנתונים';
+    if (inp)   { inp.value = ''; }
+    if (err)   err.style.display = 'none';
+    modal.style.display = 'flex';
+    modal.dataset.mode = 'new';
+    setTimeout(function() { if (inp) inp.focus(); }, 100);
+  }
+}
+
+// ── Confirm site name and start survey ──
+function confirmSiteName() {
+  var inp  = document.getElementById('site-name-modal-input');
+  var err  = document.getElementById('site-name-modal-err');
+  var name = inp ? inp.value.trim() : '';
+  if (!name) {
+    if (err) err.style.display = 'block';
+    if (inp) inp.focus();
+    return;
+  }
+  if (err) err.style.display = 'none';
+  var modal = document.getElementById('site-name-modal');
+  var mode  = modal ? modal.dataset.mode : 'new';
+  modal.style.display = 'none';
+
+  if (mode === 'new') {
+    _doOpenNewSurvey('multi', name);
+  } else if (mode === 'next') {
+    // Save current site data into sites[] and reset form
+    _saveCurrentSiteToArray();
+    App.currentSurvey.site_name = name;
+    App.currentSurvey._currentSiteIndex = (App.currentSurvey._currentSiteIndex || 0) + 1;
+    // Reset form for new site
+    App.currentSurvey.systems = [];
+    App.currentSurvey.spaces  = [];
+    App.currentSurvey.site_photos = [];
+    App.currentSurvey.energy_sources = [];
+    App.currentSurvey.elec_table_1 = null;
+    App.currentSurvey.elec_table_2 = null;
+    App.currentSurvey.elec_table_3 = null;
+    App.currentSurvey.elec_table_4 = null;
+    App.currentSurvey.gas_table_1 = null;
+    App.currentSurvey.gas_table_2 = null;
+    App.currentSurvey.gas_table_3 = null;
+    App.currentSurvey.gas_table_4 = null;
+    App.currentSurvey.fuel_table_1 = null;
+    App.currentSurvey.fuel_table_2 = null;
+    App.currentSurvey.fuel_table_3 = null;
+    App.currentSurvey.fuel_table_4 = null;
+    // Reset UI fields (keep company info)
+    setVal('f-site-name', name);
+    if (typeof renderSystemsList === 'function') renderSystemsList();
+    if (typeof loadSitePhotosToForm === 'function') loadSitePhotosToForm();
+    if (typeof initElecTables === 'function') initElecTables();
+    if (typeof initEnergySources === 'function') initEnergySources();
+    App._elecData = {}; App._gasData = null; App._fuelData = null;
+    App.transformerRows = []; renderTransformerRows();
+    goToStep(1);
+    setText('form-title', 'סקר מרובה אתרים — ' + name);
+    toast('עובד על אתר: ' + name, 'info');
+  }
+}
+
+function cancelSiteNameModal() {
+  document.getElementById('site-name-modal').style.display = 'none';
+  // If we were in 'next' mode, close next-site modal too
+  document.getElementById('next-site-modal').style.display = 'none';
+}
+
+// ── Save current site data into the sites array ──
+function _saveCurrentSiteToArray() {
+  if (!App.currentSurvey) return;
+  var data = collectData();
+  var siteSnapshot = {
+    site_name:    data.site_name || App.currentSurvey.site_name,
+    site_type:    data.site_type,
+    address_full: data.address_full,
+    city:         data.city,
+    employees_count:   data.employees_count,
+    building_area_m2:  data.building_area_m2,
+    conditioned_area_m2: data.conditioned_area_m2,
+    hours_office:  data.hours_office,
+    hours_factory: data.hours_factory,
+    working_days_per_week: data.working_days_per_week,
+    active_friday: data.active_friday,
+    active_saturday: data.active_saturday,
+    systems:       data.systems,
+    spaces:        data.spaces,
+    site_photos:   data.site_photos,
+    energy_sources: data.energy_sources,
+    elec_table_1:  data.elec_table_1,
+    elec_table_2:  data.elec_table_2,
+    elec_table_3:  data.elec_table_3,
+    elec_table_4:  data.elec_table_4,
+    gas_table_1:   data.gas_table_1,
+    gas_table_2:   data.gas_table_2,
+    gas_table_3:   data.gas_table_3,
+    gas_table_4:   data.gas_table_4,
+    fuel_table_1:  data.fuel_table_1,
+    fuel_table_2:  data.fuel_table_2,
+    fuel_table_3:  data.fuel_table_3,
+    fuel_table_4:  data.fuel_table_4,
+    notes:         data.notes,
+    saved_at:      new Date().toISOString(),
+  };
+  if (!Array.isArray(App.currentSurvey.sites)) App.currentSurvey.sites = [];
+  var idx = App.currentSurvey._currentSiteIndex || 0;
+  App.currentSurvey.sites[idx] = siteSnapshot;
+}
+
+// ── Prompt for next site after save ──
+function _promptNextSite() {
+  var sites    = App.currentSurvey.sites || [];
+  var curName  = App.currentSurvey.site_name || 'האתר הנוכחי';
+  var total    = sites.length + 1;
+  var infoEl   = document.getElementById('next-site-info');
+  if (infoEl) infoEl.textContent = 'נשמרו ' + total + ' אתר/ים. האתר האחרון שנשמר: ' + curName;
+  document.getElementById('next-site-modal').style.display = 'flex';
+}
+
+// ── Add next site ──
+function addNextSite() {
+  document.getElementById('next-site-modal').style.display = 'none';
+  // Show site name modal in "next" mode
+  var modal = document.getElementById('site-name-modal');
+  var title = document.getElementById('site-name-modal-title');
+  var sub   = document.getElementById('site-name-modal-sub');
+  var inp   = document.getElementById('site-name-modal-input');
+  var err   = document.getElementById('site-name-modal-err');
+  var siteNum = (App.currentSurvey.sites || []).length + 2;
+  if (title) title.textContent = 'שם האתר ' + siteNum;
+  if (sub)   sub.textContent   = 'הזן את שם האתר הבא';
+  if (inp)   inp.value = '';
+  if (err)   err.style.display = 'none';
+  modal.dataset.mode = 'next';
+  modal.style.display = 'flex';
+  setTimeout(function() { if (inp) inp.focus(); }, 100);
+}
+
+// ── Finish multi-site survey ──
+function finishMultiSurvey() {
+  document.getElementById('next-site-modal').style.display = 'none';
+  // Save current site into array
+  _saveCurrentSiteToArray();
+  // Save final survey
+  saveDraft(false);
+  toast('✅ הסקר המרובה-אתרים נשמר בהצלחה!', 'success');
+  renderSurveyList();
+  navigateTo('surveys');
+}
+
+// ── Open multi-site survey for viewing: show site tabs ──
+function openMultiSiteSurvey(survey) {
+  var tabsBar   = document.getElementById('site-tabs-bar');
+  var tabsInner = document.getElementById('site-tabs-inner');
+  if (!tabsBar || !tabsInner) return;
+
+  var allSites = [];
+  // Add saved sites from sites[]
+  (survey.sites || []).forEach(function(s, i) {
+    allSites.push({ label: s.site_name || ('אתר ' + (i+1)), data: s });
+  });
+  // Add the last (current) site
+  allSites.push({ label: survey.site_name || 'אתר נוכחי', data: survey, isCurrent: true });
+
+  // Build tabs
+  tabsInner.innerHTML = allSites.map(function(s, i) {
+    return '<button class="btn btn-outline btn-sm site-tab-btn" data-site-idx="'+i+'" onclick="switchSiteTab('+i+')" style="white-space:nowrap;">'+
+           '<i class="fas fa-building" style="margin-left:4px;"></i>' + escHtml(s.label) + '</button>';
+  }).join('') +
+  '<button class="btn btn-outline btn-sm" onclick="switchSiteTab(-1)" style="white-space:nowrap;border-color:#7c3aed;color:#7c3aed;">'+
+  '<i class="fas fa-layer-group" style="margin-left:4px;"></i> סיכום כולל</button>';
+
+  tabsBar.style.display = 'block';
+  tabsBar._allSites = allSites;
+  tabsBar._survey   = survey;
+
+  // Show first site by default
+  switchSiteTab(0);
+}
+
+// ── Switch between site tabs ──
+function switchSiteTab(idx) {
+  var tabsBar = document.getElementById('site-tabs-bar');
+  if (!tabsBar) return;
+
+  // Update tab styles
+  tabsBar.querySelectorAll('.site-tab-btn').forEach(function(btn, i) {
+    btn.style.background = (i === idx) ? 'var(--primary)' : '';
+    btn.style.color      = (i === idx) ? '#fff' : '';
+    btn.style.borderColor= (i === idx) ? 'var(--primary)' : '';
+  });
+
+  if (idx === -1) {
+    // Summary view
+    _showSiteSummary(tabsBar._survey, tabsBar._allSites);
+    return;
+  }
+
+  var siteData = tabsBar._allSites[idx];
+  if (!siteData) return;
+
+  // Populate form with this site's data
+  var d = siteData.data;
+  setVal('f-site-name', d.site_name || siteData.label);
+  setVal('f-city', d.city);
+  setVal('f-address', d.address_full);
+  setVal('f-employees-count', d.employees_count);
+  setVal('f-building-area', d.building_area_m2);
+  if (typeof initElecTables === 'function') {
+    initElecTables(
+      d.elec_table_1 || null, d.elec_table_2 || null,
+      d.elec_table_3 || null, d.elec_table_4 || null
+    );
+  }
+  if (typeof renderSystemsList === 'function') {
+    App.currentSurvey.systems = typeof d.systems === 'string' ? JSON.parse(d.systems || '[]') : (d.systems || []);
+    renderSystemsList();
+  }
+  toast('מציג: ' + siteData.label, 'info');
+}
+
+// ── Summary view ──
+function _showSiteSummary(survey, allSites) {
+  var rows = allSites.map(function(s, i) {
+    var d = s.data;
+    var sysCnt = Array.isArray(d.systems) ? d.systems.length : 0;
+    try { sysCnt = JSON.parse(d.systems || '[]').length; } catch(e) {}
+    return '<tr><td style="padding:8px 12px;border:1px solid var(--border);font-weight:600;">'+escHtml(s.label)+'</td>' +
+           '<td style="padding:8px 12px;border:1px solid var(--border);">'+escHtml(d.city||'—')+'</td>' +
+           '<td style="padding:8px 12px;border:1px solid var(--border);text-align:center;">'+escHtml(String(d.employees_count||'—'))+'</td>' +
+           '<td style="padding:8px 12px;border:1px solid var(--border);text-align:center;">'+escHtml(String(d.building_area_m2||'—'))+'</td>' +
+           '<td style="padding:8px 12px;border:1px solid var(--border);text-align:center;">'+sysCnt+'</td></tr>';
+  }).join('');
+
+  showConfirm(
+    'סיכום סקר — ' + escHtml(survey.company_name || survey.site_name || ''),
+    '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;direction:rtl;">' +
+    '<tr style="background:var(--primary-light);"><th style="padding:8px 12px;border:1px solid var(--border);text-align:right;">אתר</th>' +
+    '<th style="padding:8px 12px;border:1px solid var(--border);">עיר</th>' +
+    '<th style="padding:8px 12px;border:1px solid var(--border);">עובדים</th>' +
+    '<th style="padding:8px 12px;border:1px solid var(--border);">שטח (מ"ר)</th>' +
+    '<th style="padding:8px 12px;border:1px solid var(--border);">מערכות</th></tr>' +
+    rows + '</table></div>',
+    function() {},
+    null
+  );
+}
+
 </script>
+
+<!-- ══ Multi-site type selection modal ══ -->
+<div id="survey-type-modal" class="modal-overlay" style="display:none;z-index:2100;">
+  <div class="modal-box" style="max-width:460px;padding:32px 28px;text-align:center;">
+    <div style="font-size:28px;margin-bottom:12px;">📋</div>
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:8px;color:var(--text-primary);">סוג הסקר</h3>
+    <p style="font-size:14px;color:var(--text-secondary);margin-bottom:24px;">האם הסקר מכסה אתר אחד או מספר אתרים?</p>
+    <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;">
+      <button class="btn btn-outline" id="st-single-btn"
+              style="padding:16px;font-size:15px;font-weight:600;border-radius:12px;justify-content:center;"
+              onclick="chooseSurveyType('single')">
+        🏭 אתר יחיד
+        <div style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-top:4px;">סקר לאתר אחד</div>
+      </button>
+      <button class="btn btn-outline" id="st-multi-btn"
+              style="padding:16px;font-size:15px;font-weight:600;border-radius:12px;justify-content:center;"
+              onclick="chooseSurveyType('multi')">
+        🏗️ מרובה אתרים
+        <div style="font-size:12px;font-weight:400;color:var(--text-secondary);margin-top:4px;">כמה אתרים תחת אותה חברה</div>
+      </button>
+    </div>
+    <button class="btn btn-outline btn-sm" onclick="document.getElementById('survey-type-modal').style.display='none'">ביטול</button>
+  </div>
+</div>
+
+<!-- ══ Site name entry modal (for multi-site) ══ -->
+<div id="site-name-modal" class="modal-overlay" style="display:none;z-index:2200;">
+  <div class="modal-box" style="max-width:420px;padding:28px 24px;">
+    <h3 id="site-name-modal-title" style="font-size:17px;font-weight:700;margin-bottom:6px;">שם האתר הנוכחי</h3>
+    <p id="site-name-modal-sub" style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">הזן את שם האתר לפני תחילת מילוי הנתונים</p>
+    <div class="form-group" style="margin-bottom:16px;">
+      <label>שם האתר <span style="color:#ef4444;">*</span></label>
+      <input type="text" id="site-name-modal-input" placeholder="לדוגמה: מפעל ראשי, מחסן, משרד ראשי..."
+             maxlength="100" style="width:100%;box-sizing:border-box;"
+             onkeydown="if(event.key==='Enter') confirmSiteName()" />
+      <span id="site-name-modal-err" style="color:#ef4444;font-size:12px;display:none;">יש להזין שם אתר</span>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-outline btn-sm" onclick="cancelSiteNameModal()">ביטול</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmSiteName()">המשך <i class="fas fa-arrow-left"></i></button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Next site prompt modal ══ -->
+<div id="next-site-modal" class="modal-overlay" style="display:none;z-index:2300;">
+  <div class="modal-box" style="max-width:420px;padding:28px 24px;text-align:center;">
+    <div style="font-size:26px;margin-bottom:10px;">✅</div>
+    <h3 style="font-size:17px;font-weight:700;margin-bottom:8px;">האתר נשמר בהצלחה!</h3>
+    <p id="next-site-info" style="font-size:13px;color:var(--text-secondary);margin-bottom:20px;"></p>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-primary" onclick="addNextSite()" style="justify-content:center;">
+        <i class="fas fa-plus"></i> הוסף אתר נוסף
+      </button>
+      <button class="btn btn-outline" onclick="finishMultiSurvey()" style="justify-content:center;">
+        <i class="fas fa-check"></i> סיים את הסקר
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Site selector bar (shown in survey view for multi-site) ══ -->
+<div id="site-tabs-bar" style="display:none;padding:10px 16px;background:var(--bg-white);border-bottom:2px solid var(--border);position:sticky;top:0;z-index:100;overflow-x:auto;white-space:nowrap;">
+  <div id="site-tabs-inner" style="display:inline-flex;gap:8px;"></div>
+</div>
 </body>
 </html>
