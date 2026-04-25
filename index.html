@@ -1632,9 +1632,19 @@ input[type="color"].de-color-input {
 .field-with-mic { display:flex; gap:5px; align-items:flex-start; }
 .field-with-mic input, .field-with-mic textarea { flex:1; }
 
+
+/* ── Offline & Backup ── */
+.offline-banner {
+  display:none; position:fixed; top:0; left:0; right:0; z-index:9999;
+  background:#f59e0b; color:#fff; text-align:center;
+  padding:7px 12px; font-size:13px; font-weight:600; letter-spacing:.2px;
+}
+.offline-banner.show { display:block; }
+
 </style>
 </head>
 <body>
+<div id="offline-banner" class="offline-banner">📵 אין חיבור לאינטרנט — עובד במצב לא מקוון. הנתונים יסונכרנו כשהחיבור יחזור</div>
 
 <!-- ===== LOGIN ===== -->
 <div id="screen-login" style="display:flex;">
@@ -1802,6 +1812,10 @@ input[type="color"].de-color-input {
           <i class="fas fa-cloud-upload-alt"></i>
           <span id="sync-label">מסונכרן</span>
         </span>
+        <span id="backup-chip" title="גיבוי אחרון" style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text-secondary);padding:3px 8px;background:var(--bg);border:1px solid var(--border);border-radius:12px;cursor:default;margin-right:4px;">
+          <i class="fas fa-shield-alt" style="color:#22c55e;font-size:11px;"></i>
+          <span id="backup-label">טרם גובה</span>
+        </span>
         <div class="user-chip">
           <div class="user-avatar-sm" id="user-avatar-top">מ</div>
           <span id="user-name-top">משתמש</span>
@@ -1936,6 +1950,28 @@ input[type="color"].de-color-input {
           <h3 style="font-size:16px;font-weight:700;color:var(--text-primary);margin-bottom:12px;padding:10px 16px;background:#fce4ec;border-radius:8px;border-right:4px solid #c62828;">
             <i class="fas fa-cog" style="color:#c62828;margin-left:8px;"></i>ניהול מערכת
           </h3>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:14px 16px;margin-bottom:14px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <i class="fas fa-shield-alt" style="color:#22c55e;font-size:20px;"></i>
+                <div>
+                  <div style="font-weight:700;font-size:14px;color:#166534;">גיבוי נתונים</div>
+                  <div id="backup-status-text" style="font-size:12px;color:#15803d;">גיבוי אוטומטי כל 5 דקות</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-outline btn-sm" onclick="manualBackup()" style="gap:5px;border-color:#22c55e;color:#166534;"><i class="fas fa-cloud-upload-alt"></i> גבה עכשיו</button>
+                <button class="btn btn-outline btn-sm" onclick="downloadBackup()" style="gap:5px;"><i class="fas fa-download"></i> הורד JSON</button>
+              </div>
+            </div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid #bbf7d0;font-size:12px;color:#15803d;display:flex;gap:16px;flex-wrap:wrap;">
+              <span>⏱ גיבוי אחרון: <strong id="last-backup-time">—</strong></span>
+              <span>📋 סקרים: <strong id="backup-count-surveys">—</strong></span>
+              <span>📁 בקרות: <strong id="backup-count-controls">—</strong></span>
+              <span>📊 דוחות: <strong id="backup-count-reports">—</strong></span>
+              <span>🤝 פגישות: <strong id="backup-count-meetings">—</strong></span>
+            </div>
+          </div>
           <div style="display:flex;gap:12px;flex-wrap:wrap;padding:4px;">
             <button class="btn btn-outline" onclick="hideHomeScreen(); openAdminUsers();" style="gap:8px;">
               <i class="fas fa-users-cog"></i> ניהול משתמשים
@@ -4353,6 +4389,12 @@ const firebaseConfig = {
 };
 if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 window.fbDb = firebase.firestore();
+// ── Offline persistence (last-write-wins on conflict) ──
+window.fbDb.enablePersistence({ synchronizeTabs: true })
+  .catch(function(err) {
+    if (err.code === 'failed-precondition') console.warn('Offline: multiple tabs open');
+    else if (err.code === 'unimplemented') console.warn('Offline: not supported in this browser');
+  });
 
 // ============================================================
 // APP USERS - Firebase helpers
@@ -6544,6 +6586,8 @@ function doEnterApp() {
   // Load surveys in background after home is shown
   setTimeout(() => loadSurveys(), 300);
   setTimeout(startPolling, 5000);
+  setTimeout(startAutoBackup, 8000);   // backup starts after app settles
+  updateOfflineBanner();
 }
 
 function applyUserUI() {
@@ -8798,8 +8842,9 @@ function deleteSurvey(id) {
 
 async function syncToServer(survey) {
   try {
+    const surveyCompressed = await compressPhotosInDoc(survey);
     const payload = {
-      ...survey,
+      ...surveyCompressed,
       energy_sources: typeof survey.energy_sources === 'string' ? JSON.parse(survey.energy_sources) : (survey.energy_sources || []),
       transformers:   typeof survey.transformers   === 'string' ? JSON.parse(survey.transformers)   : (survey.transformers   || []),
       systems:        typeof survey.systems        === 'string' ? JSON.parse(survey.systems)        : (survey.systems        || []),
@@ -12460,6 +12505,201 @@ var _micObs = new MutationObserver(function(muts) {
   });
 });
 _micObs.observe(document.body, {childList:true, subtree:true});
+
+
+// ============================================================
+// ══ OFFLINE & BACKUP SYSTEM ══
+// ============================================================
+
+// ── Offline banner ──
+function updateOfflineBanner() {
+  var banner = document.getElementById('offline-banner');
+  if (banner) banner.classList.toggle('show', !navigator.onLine);
+}
+window.addEventListener('online', function() {
+  updateOfflineBanner();
+  toast('החיבור חזר — מסנכרן נתונים', 'success');
+});
+window.addEventListener('offline', function() {
+  updateOfflineBanner();
+  toast('אין חיבור — עובד במצב לא מקוון', 'warning');
+});
+document.addEventListener('DOMContentLoaded', updateOfflineBanner);
+
+// ── Photo compression ──
+function compressBase64Image(dataUrl, maxKB) {
+  return new Promise(function(resolve) {
+    maxKB = maxKB || 500;
+    if (!dataUrl || !dataUrl.startsWith('data:image')) { resolve(dataUrl); return; }
+    var byteKB = Math.round(dataUrl.length * 0.75 / 1024);
+    if (byteKB <= maxKB) { resolve(dataUrl); return; }
+    var img = new Image();
+    img.onload = function() {
+      var ratio = Math.min(1, Math.sqrt((maxKB * 1024) / (byteKB * 1024)));
+      var canvas = document.createElement('canvas');
+      canvas.width  = Math.round(img.width  * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+      var q = 0.8, result = canvas.toDataURL('image/jpeg', q);
+      while (result.length > maxKB * 1024 * 1.37 && q > 0.3) {
+        q -= 0.1;
+        result = canvas.toDataURL('image/jpeg', q);
+      }
+      resolve(result);
+    };
+    img.onerror = function() { resolve(dataUrl); };
+    img.src = dataUrl;
+  });
+}
+
+async function compressPhotosInDoc(doc) {
+  if (!doc) return doc;
+  var d = Object.assign({}, doc);
+  if (Array.isArray(d.site_photos)) {
+    d.site_photos = await Promise.all(d.site_photos.map(async function(p) {
+      return (p && p.dataUrl) ? Object.assign({}, p, { dataUrl: await compressBase64Image(p.dataUrl) }) : p;
+    }));
+  }
+  if (Array.isArray(d.systems)) {
+    d.systems = await Promise.all(d.systems.map(async function(sys) {
+      if (!sys || !Array.isArray(sys.photos)) return sys;
+      var s = Object.assign({}, sys);
+      s.photos = await Promise.all(s.photos.map(async function(p) {
+        return (p && p.dataUrl) ? Object.assign({}, p, { dataUrl: await compressBase64Image(p.dataUrl) }) : p;
+      }));
+      return s;
+    }));
+  }
+  return d;
+}
+
+// ── Backup state ──
+var _backupTimer = null;
+var _lastBackupTime = null;
+var _backupCounts = {};
+
+function _updateBackupChip() {
+  var chip = document.getElementById('backup-label');
+  var statusEl = document.getElementById('backup-status-text');
+  var timeEl = document.getElementById('last-backup-time');
+  if (!_lastBackupTime) return;
+  var str = _lastBackupTime.toLocaleTimeString('he-IL', { hour:'2-digit', minute:'2-digit' });
+  var dateStr = _lastBackupTime.toLocaleDateString('he-IL');
+  if (chip) chip.textContent = str;
+  if (timeEl) timeEl.textContent = dateStr + ' ' + str;
+  if (statusEl) {
+    var total = Object.values(_backupCounts).reduce(function(a,b){return a+b;},0);
+    statusEl.textContent = 'גובה ' + total + ' רשומות · כל 5 דקות';
+  }
+  ['surveys','controls','reports','meetings'].forEach(function(k) {
+    var el = document.getElementById('backup-count-' + k);
+    if (el) el.textContent = _backupCounts['energy_' + k] != null ? _backupCounts['energy_' + k] : '—';
+  });
+}
+
+// ── Core backup ──
+async function performBackup(manual) {
+  if (!navigator.onLine) {
+    if (manual) toast('לא ניתן לגבות — אין חיבור לאינטרנט', 'error');
+    return;
+  }
+  if (!window.fbDb || !App.currentUser) return;
+  try {
+    var db = window.fbDb;
+    var cols = ['energy_surveys','energy_controls','energy_reports','energy_meetings'];
+    var snapshot = { backed_up_at: new Date().toISOString(), counts: {}, data: {} };
+    for (var i = 0; i < cols.length; i++) {
+      var col = cols[i];
+      try {
+        var snap = await db.collection(col).get();
+        var docs = [];
+        snap.forEach(function(d) { docs.push(Object.assign({ _id: d.id }, d.data())); });
+        snapshot.data[col] = docs;
+        snapshot.counts[col] = docs.length;
+        _backupCounts[col] = docs.length;
+      } catch(e) { console.warn('Backup error', col, e); }
+    }
+    // Save metadata to Firestore backups collection
+    await db.collection('backups').add({
+      backed_up_at: snapshot.backed_up_at,
+      counts: snapshot.counts,
+      user: (App.currentUser.email || App.currentUser.username || 'unknown')
+    });
+    // Cache full snapshot in localStorage for offline download
+    try {
+      localStorage.setItem('nrg_last_backup', JSON.stringify(snapshot));
+      localStorage.setItem('nrg_last_backup_time', snapshot.backed_up_at);
+    } catch(e) { console.warn('LocalStorage backup quota:', e); }
+    _lastBackupTime = new Date();
+    _updateBackupChip();
+    if (manual) toast('✅ גיבוי הושלם בהצלחה!', 'success');
+  } catch(e) {
+    console.error('Backup failed:', e);
+    if (manual) toast('שגיאה בגיבוי: ' + e.message, 'error');
+  }
+}
+
+// ── Manual backup button ──
+async function manualBackup() {
+  var btn = document.querySelector('[onclick="manualBackup()"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> מגבה...'; }
+  await performBackup(true);
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> גבה עכשיו'; }
+}
+
+// ── Download full backup as JSON ──
+async function downloadBackup() {
+  var btn = document.querySelector('[onclick="downloadBackup()"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> מכין...'; }
+  try {
+    var db = window.fbDb;
+    var cols = ['energy_surveys','energy_controls','energy_reports','energy_meetings','app_users'];
+    var snapshot = { exported_at: new Date().toISOString(), version: '1.0', data: {} };
+    for (var i = 0; i < cols.length; i++) {
+      try {
+        var snap = await db.collection(cols[i]).get();
+        var docs = [];
+        snap.forEach(function(d) { docs.push(Object.assign({ _id: d.id }, d.data())); });
+        snapshot.data[cols[i]] = docs;
+      } catch(e) { snapshot.data[cols[i]] = []; }
+    }
+    var blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'NRG-Backup-' + new Date().toISOString().slice(0,10) + '.json';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+    toast('📥 קובץ גיבוי הורד', 'success');
+  } catch(e) {
+    // Fallback to cached backup
+    var cached = localStorage.getItem('nrg_last_backup');
+    if (cached) {
+      var blob = new Blob([cached], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url; a.download = 'NRG-Backup-cached.json';
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 1000);
+      toast('📥 הורד גיבוי מטמון', 'success');
+    } else {
+      toast('שגיאה: ' + e.message, 'error');
+    }
+  }
+  if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-download"></i> הורד JSON'; }
+}
+
+// ── Auto backup every 5 min ──
+function startAutoBackup() {
+  performBackup(false);
+  _backupTimer = setInterval(function() { performBackup(false); }, 5 * 60 * 1000);
+}
+
+// ── Restore last backup time from localStorage on page load ──
+(function() {
+  var t = localStorage.getItem('nrg_last_backup_time');
+  if (t) { _lastBackupTime = new Date(t); _updateBackupChip(); }
+})();
 
 </script>
 </body>
